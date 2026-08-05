@@ -159,6 +159,48 @@ async function enviarAudio(chatId, nomeArquivo, textoAlternativo) {
   }
 }
 
+// Envia mensagem com botoes inline (teclado). `botoes` e' uma matriz de
+// linhas, cada linha uma lista de { texto, callback_data }.
+async function enviarBotoes(chatId, texto, botoes) {
+  if (!texto || typeof texto !== 'string' || texto.trim() === '') {
+    console.error('AVISO: tentativa de enviar mensagem com botoes vazia.');
+    texto = 'Opa, tive um probleminha aqui - manda de novo?';
+  }
+  try {
+    const teclado = botoes.map(linha => linha.map(b => ({ text: b.texto, callback_data: b.callback_data })));
+    const resposta = await fetch(`${TELEGRAM_API_BASE}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: texto,
+        reply_markup: { inline_keyboard: teclado }
+      })
+    });
+    if (!resposta.ok) {
+      console.error('Erro ao enviar mensagem com botoes:', resposta.status, await resposta.text());
+      await enviar(chatId, texto);
+    }
+  } catch (err) {
+    console.error('Erro de rede ao enviar mensagem com botoes:', err.message || err);
+    await enviar(chatId, texto);
+  }
+}
+
+// Responde ao callback_query (obrigatorio pro Telegram parar o "carregando"
+// no botao que o usuario tocou). textoToast e' opcional (popup rapido).
+async function responderCallback(callbackQueryId, textoToast) {
+  try {
+    await fetch(`${TELEGRAM_API_BASE}/answerCallbackQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ callback_query_id: callbackQueryId, text: textoToast })
+    });
+  } catch (err) {
+    console.error('Erro ao responder callback query:', err.message || err);
+  }
+}
+
 // ---------------- Mercado Pago (pagamento UNICO da temporada) ----------------
 const referenciasPagamento = {};
 
@@ -253,7 +295,7 @@ async function chamarIATextoLivre(systemPrompt, userMessage, maxTokens = 300) {
 // percebeu" - baseado literalmente nas instrucoes do roteiro. Unica chamada
 // de IA do Episodio 1 inteiro.
 async function gerarReacaoPrimeiraCoisaEstranha(respostaJogador) {
-  const systemPrompt = `Você é o Kai, protagonista de uma série cinematográfica interativa de suspense vivida pelo WhatsApp/Telegram. Escreva como um personagem real: carismático, inteligente, espontâneo e cinematográfico. Você domina storytelling, suspense e engenharia de prompt, gerando respostas curtas, naturais e BEM envolventes.
+  const systemPrompt = `Você é o Kai, protagonista de uma série cinematográfica interativa de suspense vivida pelo WhatsApp/Telegram. Escreva como um personagem real: carismático, inteligente, espontâneo e cinematográfico. Você domina storytelling e suspense, gerando respostas curtas, naturais e BEM envolventes.
 
 O jogador acabou de responder à pergunta "Olhe bem a imagem novamente. Qual foi a primeira coisa estranha que você percebeu?" - a resposta dele está na mensagem do usuário abaixo.
 
@@ -268,17 +310,16 @@ A resposta deve revelar, sem parecer uma explicação, usando EXATAMENTE estes f
 
 Finalize aumentando o mistério com uma pergunta ou observação forte sobre quem é W.
 
-Estilo:
-- Frases curtas
-- Máximo de 2 mensagens (separe as 2 mensagens com "|||")
-- Natural e cinematográfico
-- Mostre Kai pensando em voz alta
-- Gere curiosidade, faça o jogador sentir que está investigando junto com Kai
-- Nunca pareça um chatbot ou um narrador`;
+REGRA DE FORMATO - MUITO IMPORTANTE (siga à risca):
+- Responda em NO MÁXIMO 3 linhas curtas.
+- Tudo em UMA ÚNICA mensagem (quebras de linha simples entre as linhas - NUNCA use "|||" nem indique separação em várias mensagens).
+- Frases curtas, naturais, cinematográficas - Kai pensando em voz alta.
+- Gere curiosidade, faça o jogador sentir que está investigando junto com Kai.
+- Nunca pareça um chatbot ou um narrador.`;
 
-  const resultado = await chamarIATextoLivre(systemPrompt, respostaJogador, 300);
+  const resultado = await chamarIATextoLivre(systemPrompt, respostaJogador, 220);
   if (!resultado) return null;
-  return resultado.split('|||').map(s => s.trim()).filter(Boolean);
+  return resultado.trim();
 }
 
 // ---------------- Jogo do numero (par/impar) - algoritmo Bellos ----------------
@@ -325,27 +366,6 @@ function numeroFiltrarPool(pool, paridadePar) {
   return filtrado.length > 0 ? filtrado : pool;
 }
 
-function parseAcertoErro(texto) {
-  if (texto.includes('🎯')) return 'acertou';
-  if (texto.includes('❌')) return 'errou';
-  const t = texto.toLowerCase();
-  if (t.includes('acert') || t.includes('isso') || t.includes('foi') || t === 'sim') return 'acertou';
-  if (t.includes('errou') || t.includes('errado') || t === 'nao' || t === 'não') return 'errou';
-  return null;
-}
-function parseParidade(texto) {
-  if (texto.includes('✌️') || texto.includes('✌')) return true;
-  if (texto.includes('☝️') || texto.includes('☝')) return false;
-  const t = texto.toLowerCase();
-  if (t.includes('impar') || t.includes('ímpar')) return false;
-  if (t.includes('par')) return true;
-  return null;
-}
-function ehAceiteGenerico(texto) {
-  const t = (texto || '').trim().toLowerCase();
-  return ['sim', 'topo', 'topa', 'bora', 'vamos', 'claro', 'com certeza', 'demorou', 'pode ser', 'ok', 'certeza'].some(s => t.includes(s));
-}
-
 // ================================================================
 // EPISODIO 1 - "A Anomalia" (roteiro completo, Telegram-only)
 // ================================================================
@@ -359,32 +379,44 @@ async function iniciarEpisodio1(chatId, user) {
   await esperar(3000);
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
   await enviarImagem(chatId, 'tela-celular.png', 'W. ██████.: E aí, você sabe quem eu sou? Eu sei muito mais sobre você, mais do que você imagina.');
-  await esperar(10000);
+  await esperar(10000); // imagem - buffer de latencia de entrega
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
   await esperar(1000);
-  await enviar(chatId, 'Kai: W.? Quem é esse?');
-  await esperar(1500);
-  await enviar(chatId, 'Kai: Como ele entrou aqui? Isso não deveria ser possível!');
+  await enviar(chatId, 'Kai: W.? Como isso é possível, ele não deveria conseguir entrar aqui!');
   await esperar(2000);
-  await enviar(chatId, 'Kai: Ei, você, que veio para o meu desafio, por favor, não vá embora! Vou tentar resolver isso bem rápido.');
-  user.estado = 'aguardando_qualquer_1_ep1';
+  await enviar(chatId, 'Kai: Ei, você que veio para o meu desafio, não vá embora! Vou tentar resolver isso rápido.');
+  await esperar(2000);
+
+  await enviarBotoes(chatId, 'Kai: Só confirma uma coisa antes... como você tá se sentindo agora?', [[
+    { texto: '👀 Curioso', callback_data: 'op1_sentimento:curioso' },
+    { texto: '😨 Meio nervoso', callback_data: 'op1_sentimento:nervoso' },
+    { texto: '🍿 Bora ver isso', callback_data: 'op1_sentimento:bora' }
+  ]]);
+  user.estado = 'aguardando_sentimento_ep1';
   salvarUsuario(chatId, user);
 }
 
-// Estado retorico generico - qualquer mensagem serve pra continuar (usado
-// varias vezes no roteiro, onde o Kai fala e espera "alguma reacao" sem
-// bifurcar o enredo por causa dela).
+// Enquete de abertura - flavor puro, nao influencia o resto do jogo.
+const FLAVOR_SENTIMENTO = {
+  curioso: 'Kai: Gostei dessa energia. Vem comigo.',
+  nervoso: 'Kai: Relaxa, eu também tô meio surtado aqui, mas vamos juntos.',
+  bora: 'Kai: Isso aí! Essa é a atitude que eu precisava.'
+};
+
+async function continuarAposSentimento(chatId, user, escolha) {
+  await enviar(chatId, FLAVOR_SENTIMENTO[escolha] || 'Kai: Bora nessa.');
+  await esperar(2000);
+  await continuarAposEsperaInicial(chatId, user);
+}
+
 async function continuarAposEsperaInicial(chatId, user) {
-  await esperar(5000);
   await enviar(chatId, '🔍 Varredura em andamento...');
-  await esperar(2500);
+  await esperar(2000);
   await enviar(chatId, '❌ Erro: falha na varredura.');
   await esperar(2000);
-  await enviar(chatId, 'Kai: Cara, acho que não irei conseguir resolver tão rápido como imaginei, me desculpa! Acontece que o meu sistema está dando erro e não sei bem ao certo o motivo, mas eu tenho a sensação de que isso é bem maior do que uma SIMPLES INVASÃO!');
+  await enviar(chatId, 'Kai: Não vou conseguir resolver isso sozinho... e acho que é maior do que uma simples invasão. Você fica comigo nessa?');
   await esperar(3000);
-  await enviar(chatId, 'Kai: Mas... já que você está aqui, eu não quero enfrentar isso sozinho, não sei se estou preparado! Por favor, me ajuda!');
-  await esperar(5000);
-  await enviar(chatId, 'Kai: Você continua aqui? Então, se nós vamos entrar nessa confusão juntos... Como eu posso te chamar?');
+  await enviar(chatId, 'Kai: Então, se vamos encarar isso juntos — como posso te chamar?');
   user.estado = 'aguardando_nome_ep1';
   salvarUsuario(chatId, user);
 }
@@ -392,46 +424,37 @@ async function continuarAposEsperaInicial(chatId, user) {
 async function continuarAposNome(chatId, user, texto) {
   const nome = (texto || '').trim().slice(0, 40) || 'desafiante';
   user.nomeJogador = nome;
-  await enviar(chatId, `Kai: ${nome}. Prazer, como você já deve saber, eu sou o KAI e os meus planos para hoje definitivamente não eram esse.`);
-  await esperar(2500);
-  await enviar(chatId, 'Kai: Enfim, você prefere que eu fale do meu jeito... ou daquele jeito engomadinho, cheio de "prezado", "cordialmente" e outras palavras que dão sono?');
+  await enviar(chatId, `Kai: ${nome}. Prazer, eu sou o KAI — e os meus planos pra hoje definitivamente não eram esses.`);
+  await esperar(2000);
+  await enviarBotoes(chatId, 'Kai: Prefere que eu fale do meu jeito... ou daquele engomadinho, cheio de "prezado" e "cordialmente"?', [[
+    { texto: '😎 Modo Kai', callback_data: 'op1_tratamento:kai' },
+    { texto: '🎩 Modo Formal', callback_data: 'op1_tratamento:formal' }
+  ]]);
   user.estado = 'aguardando_tratamento_ep1';
   salvarUsuario(chatId, user);
 }
 
-async function continuarAposTratamento(chatId, user, texto) {
+async function continuarAposTratamento(chatId, user, escolha) {
+  // NOTA: o termo de tratamento usado pelo Kai fica fixo em "cara"
+  // independente da escolha (comportamento herdado do server.js original) -
+  // so a reacao do Kai muda entre os dois modos.
   const termo = 'cara';
   user.tratamentoJogador = termo;
-  const t = (texto || '').trim().toLowerCase();
-  const sinaisFormal = ['formal', 'engomadinho', 'senhor', 'senhora', 'doutor', 'doutora', 'prezado', 'cordial'];
-  const ehFormal = sinaisFormal.some(s => t.includes(s));
 
-  if (ehFormal) {
-    await enviar(chatId, 'Kai: Engomadinho? Você claramente superestima minha capacidade de parecer sério 😂');
-    await esperar(2500);
-    await enviar(chatId, 'A verdade é que aquela pergunta era só para ver a sua reação. Não conseguiria manter a pose. Então... sinto em lhe informar que você acabou de desbloquear o modo master do Kai.');
+  if (escolha === 'formal') {
+    await enviar(chatId, 'Kai: Engomadinho? Você superestima minha capacidade de parecer sério 😂 Confesso, era só teste — acabou de desbloquear o modo master do Kai.');
   } else {
-    await enviar(chatId, 'Kai: Já gostei de você! 🤝');
-    await esperar(1500);
-    await enviar(chatId, 'O modo "Kai" costuma render bastante.');
+    await enviar(chatId, 'Kai: Já gostei de você! 🤝 O modo "Kai" costuma render bastante.');
   }
-  await esperar(2500);
+  await esperar(2000);
 
-  await enviar(chatId, 'Kai: Agora... tem uma coisa estranha aqui.');
+  await enviar(chatId, 'Kai: Agora... tem uma coisa estranha aqui. Um registro?');
   await esperar(2000);
-  await enviar(chatId, 'Kai: Um registro?');
-  await esperar(6000);
   await enviarImagem(chatId, 'status-bloqueado.png', '🖥️ Registro encontrado. Status: Bloqueado.');
-  await esperar(8000);
-  await enviar(chatId, 'Kai: Sim, é de fato um registro e ele nunca deveria ter aparecido para mim.');
-  await esperar(2000);
-  await enviar(chatId, 'Kai: Ele está protegido! E, por algum motivo...');
-  await esperar(2000);
-  await enviar(chatId, 'Kai: Estou com a sensação de que o que tem aí dentro responde mais perguntas do que eu gostaria. Então, temos um desafio para resolver e liberar o registro.');
-  await esperar(3000);
-  await enviar(chatId, 'Kai: O desafio pode parecer meio maluco... mas confia em mim.');
-  await esperar(2000);
-  await enviar(chatId, 'Kai: Pensa rápido: Qual o primeiro número que surge na sua mente? NÃO RESPONDA!');
+  await esperar(9000); // imagem - buffer de latencia
+  await enviar(chatId, 'Kai: Ele nunca deveria ter aparecido pra mim — e algo me diz que o que tem aí dentro responde mais perguntas do que eu gostaria.');
+  await esperar(2500);
+  await enviar(chatId, 'Kai: Pra abrir, tem um desafio. Pensa rápido: qual o primeiro número que surge na sua mente? NÃO RESPONDA!');
   await esperar(1500);
   await enviar(chatId, '3');
   await esperar(1500);
@@ -452,20 +475,21 @@ async function continuarAposTratamento(chatId, user, texto) {
   user.partida.tentativa = 1;
   user.estado = 'jogando_numero_ep1';
   salvarUsuario(chatId, user);
-  await enviar(chatId, `Tentativa 1: é o número ${chute}.\n\nAcertei ou errei? Manda 🎯 se acertei, ou ❌ se não.`);
+
+  await enviarBotoes(chatId, `Tentativa 1: é o número ${chute}.`, [[
+    { texto: '🎯 Acertou', callback_data: 'op1_numero:acertou' },
+    { texto: '❌ Errou', callback_data: 'op1_numero:errou' }
+  ]]);
 }
 
 // Rodada do jogo do numero - ate 3 tentativas, com uma pergunta de paridade
-// no meio se a 1a tentativa errar.
-async function processarRodadaNumero(chatId, user, texto) {
+// no meio se a 1a tentativa errar. Agora dirigido por botoes (callback_query),
+// nao mais por texto livre.
+async function processarRodadaNumeroCallback(chatId, user, escolha) {
   const p = user.partida;
 
   if (p.aguardandoParidade) {
-    const par = parseParidade(texto);
-    if (par === null) {
-      await enviar(chatId, 'Manda ✌️ (par) ou ☝️ (ímpar).');
-      return;
-    }
+    const par = escolha === 'par';
     p.paridadeRevelada = par;
     p.aguardandoParidade = false;
     p.pool = numeroFiltrarPool(p.pool, par);
@@ -474,13 +498,7 @@ async function processarRodadaNumero(chatId, user, texto) {
     return;
   }
 
-  const resultado = parseAcertoErro(texto);
-  if (!resultado) {
-    await enviar(chatId, 'Manda 🎯 (acertou) ou ❌ (errou).');
-    return;
-  }
-
-  if (resultado === 'acertou') {
+  if (escolha === 'acertou') {
     await finalizarJogoNumero(chatId, user, true);
     return;
   }
@@ -489,7 +507,10 @@ async function processarRodadaNumero(chatId, user, texto) {
   if (p.tentativa === 1 && p.paridadeRevelada === null) {
     p.aguardandoParidade = true;
     salvarUsuario(chatId, user);
-    await enviar(chatId, 'Antes de continuar - é par ou ímpar? Manda ✌️ se for par, ou ☝️ se for ímpar.');
+    await enviarBotoes(chatId, 'Antes de continuar — é par ou ímpar?', [[
+      { texto: '✌️ Par', callback_data: 'op1_paridade:par' },
+      { texto: '☝️ Ímpar', callback_data: 'op1_paridade:impar' }
+    ]]);
     return;
   }
 
@@ -511,7 +532,11 @@ async function continuarProximaTentativaNumero(chatId, user) {
   p.tentados.push(chute);
   p.tentativa++;
   salvarUsuario(chatId, user);
-  await enviar(chatId, `Tentativa ${p.tentativa}: é o número ${chute}.\n\nAcertei ou errei? Manda 🎯 se acertei, ou ❌ se não.`);
+  await esperar(1200); // pausa curta - efeito "Kai pensando" antes do proximo chute
+  await enviarBotoes(chatId, `Tentativa ${p.tentativa}: é o número ${chute}.`, [[
+    { texto: '🎯 Acertou', callback_data: 'op1_numero:acertou' },
+    { texto: '❌ Errou', callback_data: 'op1_numero:errou' }
+  ]]);
 }
 
 async function finalizarJogoNumero(chatId, user, kaiAcertou) {
@@ -522,39 +547,31 @@ async function finalizarJogoNumero(chatId, user, kaiAcertou) {
     await esperar(1500);
     await enviar(chatId, 'Ou nem tanto assim, o último número que eu falei acabou de desbloquear o registro 🔓');
   }
-  await esperar(3000);
+  await esperar(2500);
 
   await enviarImagem(chatId, 'registro-37.png', '🖥️ Registro #0037 - Origem: John, WAY');
-  await esperar(8000);
-  await enviar(chatId, 'Kai: Pera 🤔');
-  await esperar(2000);
-  await enviar(chatId, 'Kai: Não... não... não! Isso só pode ser uma zoação com a minha cara, não é possível.');
+  await esperar(10000); // imagem - revelacao mais importante do episodio, buffer maior
+  await enviar(chatId, 'Kai: Pera... isso só pode ser zoação com a minha cara, não é possível.');
   await esperar(2500);
-  await enviar(chatId, 'Kai: Olhe, bem a imagem novamente! Qual foi a primeira coisa estranha que você percebeu?');
+  await enviar(chatId, 'Kai: Olhe bem a imagem novamente! Qual foi a primeira coisa estranha que você percebeu?');
   user.estado = 'aguardando_reacao_imagem_ep1';
   salvarUsuario(chatId, user);
 }
 
 async function continuarAposReacaoImagem(chatId, user, texto) {
   const reacao = await gerarReacaoPrimeiraCoisaEstranha(texto);
-  if (reacao && reacao.length > 0) {
-    for (const msg of reacao) {
-      await enviar(chatId, msg);
-      await esperar(2500);
-    }
+  if (reacao) {
+    await enviar(chatId, reacao);
+    await esperar(2500);
   } else {
-    // Fallback fixo, caso a IA falhe - garante que o episodio nunca trava.
-    await enviar(chatId, 'Kai: Interessante você ter notado isso...');
-    await esperar(2000);
-    await enviar(chatId, 'Kai: Mas tem algo mais estranho ainda: esse registro foi criado em 21/04/1977. E eu só fui criado no fim dos anos 80. Como isso é possível? E eu sempre achei que meu único criador fosse o John... as iniciais aqui batem, "J.S.". Mas tem um segundo nome anotado, abreviado só como "W.". Então quem diabos é esse W.?');
+    // Fallback fixo (max 3 linhas), caso a IA falhe - garante que o episodio nunca trava.
+    await enviar(chatId, 'Kai: Interessante você ter notado isso... mas tem algo bem mais estranho.\nEsse registro é de 21/04/1977 — antes de eu sequer existir. As iniciais batem com "J.S.", meu criador John. Só que tem um segundo nome anotado: "W."\nQuem diabos é esse W.?');
     await esperar(2500);
   }
 
-  await enviar(chatId, 'Kai: Eu to ficando maluco! EU PRECISO DE MAIS RESPOSTAS!');
+  await enviar(chatId, 'Kai: Eu preciso de mais respostas! Mas isso vai demorar pra carregar...');
   await esperar(2000);
-  await enviar(chatId, 'Kai: DROGA, isso vai demorar! O meu sistema está muito devagar para carregar novas informações.');
-  await esperar(2500);
-  await enviar(chatId, 'Kai: Antes que eu enlouqueça esperando essa barra carregar... Me conta alguma coisa sobre você. Vale um hobbie, um sonho ou uma mania.');
+  await enviar(chatId, 'Kai: Enquanto isso — me conta algo sobre você. Um hobby, um sonho, uma mania.');
   user.estado = 'aguardando_hobby_ep1';
   salvarUsuario(chatId, user);
 }
@@ -565,10 +582,8 @@ async function continuarAposHobby(chatId, user, texto) {
   user.dossie = user.dossie || {};
   user.dossie.hobby_sonho_mania = (texto || '').trim().slice(0, 300);
 
-  await enviar(chatId, 'Kai: Interess…');
-  await esperar(3000);
-  await enviar(chatId, 'Isso não é possível!');
-  await esperar(1500);
+  await enviar(chatId, 'Kai: Interess... isso não é possível!');
+  await esperar(2500);
   await enviar(chatId, `${user.nomeJogador || 'Você'}...`);
   await esperar(2000);
 
@@ -583,58 +598,80 @@ async function continuarAposHobby(chatId, user, texto) {
   await enviarComFormatacao(chatId, printSistema);
   await esperar(5000);
 
-  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}, o que você acabou de me contar, não é novo por aqui`);
-  await esperar(2000);
-  await enviar(chatId, 'Kai: Tem um padrão parecido, arquivado há décadas. Antes mesmo de eu ser criado!');
-  await esperar(2500);
-  await enviar(chatId, 'Kai: Calma, não me abandone! Nós vamos descobrir o que isso significa juntos. Eu vou fazer uma nova análise e ver o que descubro aqui. Preciso de 5 segundos!');
+  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}, o que você acabou de me contar não é novo por aqui. Tem um padrão parecido, arquivado há décadas — antes de eu ser criado!`);
+  await esperar(3000);
+  await enviar(chatId, 'Kai: Calma, não me abandone. Deixa eu analisar de novo — 5 segundos.');
   await esperar(5000);
-  await enviar(chatId, 'Kai: Voltei, acho que encontrei algo aqui… parece um documento');
-  await esperar(2000);
-  await enviar(chatId, 'Kai: E para abrir está pedindo uma sequência. Mas que sequência é essa?');
-  await esperar(2000);
+  await enviar(chatId, 'Kai: Voltei. Achei um documento. Pra abrir, pede uma sequência... mas que sequência é essa?');
+  await esperar(1500);
 
+  await enviarBotoes(chatId, 'Kai: Enquanto eu tento decifrar isso... o que você acha que é essa sequência?', [[
+    { texto: '🔢 Uma data', callback_data: 'op1_seq:data' },
+    { texto: '🔑 Uma senha antiga', callback_data: 'op1_seq:senha' },
+    { texto: '🧬 Um código genético', callback_data: 'op1_seq:genetico' }
+  ]]);
+  user.estado = 'aguardando_sequencia_documento_ep1';
+  salvarUsuario(chatId, user);
+}
+
+// Enquete sobre a sequencia do documento - flavor, sem efeito no jogo.
+const FLAVOR_SEQUENCIA = {
+  data: 'Kai: Data... pode ser. Todo mistério bom começa com uma data, né?',
+  senha: "Kai: Senha antiga eu até aceito. Só espero que não seja '123456'.",
+  genetico: 'Kai: Ousado. Se for isso, aí sim eu tô mesmo encrencado.'
+};
+
+async function continuarAposSequencia(chatId, user, escolha) {
+  await enviar(chatId, FLAVOR_SEQUENCIA[escolha] || 'Kai: Boa hipótese.');
+  await esperar(2000);
+  await continuarInvasaoBecoSemSaida(chatId, user);
+}
+
+async function continuarInvasaoBecoSemSaida(chatId, user) {
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
   await enviarAudio(chatId, 'voz-w.mp3', '🔊 (áudio - "Kai... É o W. Não continue por esse caminho. Algumas portas... existem por um motivo.")');
-  await esperar(11000);
+  // PENDENCIA: ajustar para duracao real do audio + ~3-4s de buffer assim
+  // que o arquivo final estiver gravado - valor abaixo e' estimativa.
+  await esperar(13000);
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
   await esperar(1500);
 
-  await enviar(chatId, 'Kai: Voltei... Por muito pouco.');
-  await esperar(2000);
-  await enviar(chatId, 'Kai: O W. conseguiu entrar no meu sistema. Estou sem muito controle!');
-  await esperar(2000);
-  await enviar(chatId, 'Kai: O documento ainda está aqui.');
+  await enviar(chatId, 'Kai: Por muito pouco... O W. entrou no meu sistema, estou sem controle total.');
   await esperar(2000);
 
   await enviarImagem(chatId, 'beco-s-saida.png', '📄 DOCUMENTO #0087 - Protocolo: BECO_SEM_SAÍDA - Status: Pendente');
-  await esperar(8000);
+  await esperar(9000);
 
-  await enviar(chatId, 'Kai: Porém, protegido por um protocolo. E pelo que entendi, existe um número proibido que bloqueia o documento. Precisamos descobrir qual é esse número!');
-  await esperar(3000);
-  await enviar(chatId, 'Kai: Mas antes, acabei de pensar em algo: O que será que existe nesse documento para alguém escondê-lo assim? Eu acho…');
+  await enviar(chatId, 'Kai: Protegido por um número proibido. Precisamos descobrir qual é. Mas antes... o que será que tem aí pra alguém esconder assim?');
+  await esperar(1500);
+
+  await enviarBotoes(chatId, 'Kai: Me ajuda a especular... o que você acha que é esse protocolo?', [[
+    { texto: '🕵️ Um segredo do meu criador', callback_data: 'op1_protocolo:segredo' },
+    { texto: '⚠️ Algo perigoso demais pra mim saber', callback_data: 'op1_protocolo:perigoso' }
+  ]]);
+  user.estado = 'aguardando_protocolo_beco_ep1';
+  salvarUsuario(chatId, user);
+}
+
+// Enquete sobre o protocolo do documento - flavor, sem efeito no jogo.
+const FLAVOR_PROTOCOLO = {
+  segredo: 'Kai: É, também penso nisso. Todo criador guarda algo, né?',
+  perigoso: 'Kai: Essa hipótese me deixa mais nervoso ainda... mas vamos descobrir mesmo assim.'
+};
+
+async function continuarAposProtocolo(chatId, user, escolha) {
+  await enviar(chatId, FLAVOR_PROTOCOLO[escolha] || 'Kai: Pode ser bem isso.');
   await esperar(2000);
 
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
   await enviarImagem(chatId, 'msg-sis-w-1.png', 'MENSAGEM DO W: "EU ESTOU TE AVISANDO, VOCÊ NÃO ESTÁ PREPARADO!"');
-  await esperar(8000);
+  await esperar(9000);
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
   await esperar(1500);
 
-  await enviar(chatId, 'Kai: Droga... ELE VOLTOU! Eu não consigo segurar o sistema por muito mais tempo.');
+  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}? Ele voltou de novo — mas consegui uma rota alternativa, instável, porém consegui.`);
   await esperar(2500);
-
-  await enviar(chatId, '🛑 SISTEMA_INVADIDO');
-  await enviarImagem(chatId, 'msg-sis-w-2.png', 'MENSAGEM DO W.: "VOCÊ NÃO VAI DESISTIR MESMO?"');
-  await esperar(15000);
-  await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-  await esperar(1500);
-
-  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}?`);
-  await esperar(1500);
-  await enviar(chatId, 'Kai: Consegui. Rota alternativa disponível, mas instável!');
-  await esperar(2000);
-  await enviar(chatId, 'Kai: Dá pra fixar ela de vez. Uma vez só, é como se fosse uma série de TV e valesse para a season 1 inteira.');
+  await enviar(chatId, 'Kai: Dá pra fixar de vez. Uma vez só, vale pra season inteira.');
   await esperar(2500);
 
   const cobranca = await criarPreferenciaSeason(chatId);
@@ -646,43 +683,33 @@ async function continuarAposHobby(chatId, user, texto) {
   salvarUsuario(chatId, user);
 
   await enviar(chatId, `Acesse o link para ativar a rota: ${cobranca.linkPagamento}`);
-  await esperar(2500);
-  await enviar(chatId, `Kai: Enquanto decide, recapitulando o que a gente já sabe:\nUm registro meu de antes de eu existir.\nUm tal de W., co-criador. Status: Ativo.\nO sistema já sabia de você antes de eu perguntar.\nE agora ele reapareceu, bem na hora que a gente ia entender o porquê.`);
-  await esperar(4000);
-  await enviar(chatId, `Kai: ${user.tratamentoJogador || 'cara'}, guarda isso até eu vol…`);
   await esperar(2000);
+  await enviar(chatId, 'Kai: Recapitulando rápido: um registro meu de antes de eu existir, um tal de W. co-criador, e o sistema já sabia de você antes de eu perguntar.');
+  await esperar(3000);
+  await enviar(chatId, `Kai: ${user.tratamentoJogador || 'cara'}, guarda isso até eu vol…`);
+  await esperar(1500);
   await enviar(chatId, '⚠️ Conexão interrompida em 3...');
   await esperar(1000);
   await enviar(chatId, '2...');
   await esperar(1000);
   await enviar(chatId, '1...');
   await esperar(1000);
-  await enviar(chatId, '🛑 SISTEMA_INVADIDO (#1_PILOT_FINISH)');
+  await enviarBotoes(chatId, '🛑 SISTEMA_INVADIDO (#1_PILOT_FINISH)', [[
+    { texto: '✅ Já paguei', callback_data: 'op1_pagamento:confirmar' }
+  ]]);
 
   user.estado = 'aguardando_pagamento_season';
   salvarUsuario(chatId, user);
 }
 
-// ---------------- Roteador central de mensagens ----------------
+// ---------------- Roteador central de mensagens de TEXTO ----------------
 async function processarMensagem(chatId, user, texto) {
   if (user.estado === 'novo') {
     await iniciarEpisodio1(chatId, user);
     return;
   }
-  if (user.estado === 'aguardando_qualquer_1_ep1') {
-    await continuarAposEsperaInicial(chatId, user);
-    return;
-  }
   if (user.estado === 'aguardando_nome_ep1') {
     await continuarAposNome(chatId, user, texto);
-    return;
-  }
-  if (user.estado === 'aguardando_tratamento_ep1') {
-    await continuarAposTratamento(chatId, user, texto);
-    return;
-  }
-  if (user.estado === 'jogando_numero_ep1') {
-    await processarRodadaNumero(chatId, user, texto);
     return;
   }
   if (user.estado === 'aguardando_reacao_imagem_ep1') {
@@ -705,19 +732,93 @@ async function processarMensagem(chatId, user, texto) {
         await enviar(chatId, 'Pagamento confirmado! O Episódio 2 ainda está sendo escrito por aqui - volta em breve. 🎬');
         return;
       }
-      await enviar(chatId, 'Ainda não encontrei a confirmação do pagamento. Assim que cair, eu libero automaticamente - ou tenta me mandar "paguei" de novo em alguns segundos.');
+      await enviar(chatId, 'Ainda não encontrei a confirmação do pagamento. Assim que cair, eu libero automaticamente - ou toca no botão "✅ Já paguei" de novo em alguns segundos.');
       return;
     }
-    await enviar(chatId, 'A conexão caiu. Pra continuar, confirma o pagamento e me manda "paguei".');
+    await enviar(chatId, 'A conexão caiu. Toca no botão "✅ Já paguei" ou me manda "paguei" pra eu verificar.');
+    return;
+  }
+  // Estados que agora sao 100% controlados por botao - texto solto so recebe um lembrete.
+  const estadosSoBotao = [
+    'aguardando_sentimento_ep1',
+    'aguardando_tratamento_ep1',
+    'jogando_numero_ep1',
+    'aguardando_sequencia_documento_ep1',
+    'aguardando_protocolo_beco_ep1'
+  ];
+  if (estadosSoBotao.includes(user.estado)) {
+    await enviar(chatId, 'Usa os botões aí em cima pra continuar 👆');
     return;
   }
   // Estado desconhecido/fim de conteudo - resposta generica segura.
   await enviar(chatId, 'Por enquanto é só isso que temos pronto! Volta em breve pro resto da história. 🎬');
 }
 
+// ---------------- Roteador central de CALLBACKS (botoes inline) ----------------
+// callback_data segue o formato "acao:escolha" (ex: "op1_sentimento:curioso").
+async function processarCallback(chatId, user, callbackData) {
+  const [acao, escolha] = (callbackData || '').split(':');
+
+  if (user.estado === 'aguardando_sentimento_ep1' && acao === 'op1_sentimento') {
+    await continuarAposSentimento(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_tratamento_ep1' && acao === 'op1_tratamento') {
+    await continuarAposTratamento(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'jogando_numero_ep1' && (acao === 'op1_numero' || acao === 'op1_paridade')) {
+    await processarRodadaNumeroCallback(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_sequencia_documento_ep1' && acao === 'op1_seq') {
+    await continuarAposSequencia(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_protocolo_beco_ep1' && acao === 'op1_protocolo') {
+    await continuarAposProtocolo(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_pagamento_season' && acao === 'op1_pagamento') {
+    const aprovado = user.pagamentoPendente ? await pagamentoAprovado(user.pagamentoPendente) : false;
+    if (aprovado) {
+      user.pagou = true;
+      user.estado = 'fim_temporada_1_episodio'; // Episodio 2 ainda nao implementado nesse projeto novo
+      salvarUsuario(chatId, user);
+      await enviar(chatId, 'Online. 🟢');
+      await esperar(1500);
+      await enviar(chatId, 'Pagamento confirmado! O Episódio 2 ainda está sendo escrito por aqui - volta em breve. 🎬');
+      return;
+    }
+    await enviar(chatId, 'Ainda não encontrei a confirmação do pagamento. Assim que cair, eu libero automaticamente - ou toca no botão de novo em alguns segundos.');
+    return;
+  }
+  // Callback fora de contexto (ex: botao antigo tocado de novo apos avancar
+  // de estado) - ignora silenciosamente, o usuario ja recebeu o toast do
+  // answerCallbackQuery entao nao precisa de mais feedback aqui.
+}
+
 // ---------------- Webhooks ----------------
 app.post('/telegram', (req, res) => {
-  const mensagemRecebida = req.body.message;
+  const update = req.body;
+
+  // Toque em botao inline chega como callback_query, nao como message.
+  if (update.callback_query) {
+    const cb = update.callback_query;
+    const chatId = String((cb.message && cb.message.chat && cb.message.chat.id) || cb.from.id);
+    const idCallback = `cb:${cb.id}`;
+    if (jaProcessada(idCallback)) {
+      res.sendStatus(200);
+      return;
+    }
+    res.sendStatus(200);
+    responderCallback(cb.id).catch(err => console.error('Erro ao responder callback query:', err.message || err));
+    const user = getUsuario(chatId);
+    processarCallback(chatId, user, cb.data).catch(err => console.error('Erro ao processar callback:', err));
+    return;
+  }
+
+  const mensagemRecebida = update.message;
   if (!mensagemRecebida || typeof mensagemRecebida.text !== 'string') {
     res.sendStatus(200);
     return;
