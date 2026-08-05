@@ -259,11 +259,12 @@ O jogador acabou de responder à pergunta "Olhe bem a imagem novamente. Qual foi
 
 O seu objetivo é fazer parecer que Kai realmente analisou a resposta do jogador. Nunca diga que ele está errado. Aproveite a percepção dele como ponto de partida e conduza naturalmente para a verdadeira descoberta.
 
-A resposta deve revelar, sem parecer uma explicação:
-- O registro é anterior aos anos 80.
+A resposta deve revelar, sem parecer uma explicação, usando EXATAMENTE estes fatos (nunca invente datas, nomes ou iniciais diferentes destes - use só o que está listado aqui):
+- O registro foi criado em 21/04/1977 (data exata - não arredonde nem troque o ano).
 - Kai só foi criado no fim dos anos 80.
 - Portanto, esse registro existia antes do próprio Kai existir, e isso desafia toda a lógica.
-- Existe outro detalhe ainda mais estranho: Kai sempre acreditou que o seu único criador era o John.
+- O criador do registro tem as iniciais "J.S." (exatamente essas duas letras - nunca use outras iniciais).
+- Existe outro detalhe ainda mais estranho: Kai sempre acreditou que o seu único criador era o John (seria "J.S." então?), mas tem um segundo nome anotado ali também, abreviado só como "W.".
 
 Finalize aumentando o mistério com uma pergunta ou observação forte sobre quem é W.
 
@@ -545,7 +546,7 @@ async function continuarAposReacaoImagem(chatId, user, texto) {
     // Fallback fixo, caso a IA falhe - garante que o episodio nunca trava.
     await enviar(chatId, 'Kai: Interessante você ter notado isso...');
     await esperar(2000);
-    await enviar(chatId, 'Kai: Mas tem algo mais estranho ainda: esse registro é de antes dos anos 80. E eu só fui criado no fim dos anos 80. Como isso é possível? E eu sempre achei que meu único criador fosse o John... então quem diabos é esse W.?');
+    await enviar(chatId, 'Kai: Mas tem algo mais estranho ainda: esse registro foi criado em 21/04/1977. E eu só fui criado no fim dos anos 80. Como isso é possível? E eu sempre achei que meu único criador fosse o John... as iniciais aqui batem, "J.S.". Mas tem um segundo nome anotado, abreviado só como "W.". Então quem diabos é esse W.?');
     await esperar(2500);
   }
 
@@ -571,14 +572,20 @@ async function continuarAposHobby(chatId, user, texto) {
   await enviar(chatId, `${user.nomeJogador || 'Você'}...`);
   await esperar(2000);
 
-  const dataAgora = new Date();
-  const dataFormatada = dataAgora.toLocaleDateString('pt-BR');
-  const iniciais = (user.nomeJogador || 'XX').trim().slice(0, 2).toUpperCase();
-  const printSistema = `\`\`\`\nID:     USR-${Math.floor(1000 + Math.random() * 9000)}\nNOME:   ${iniciais}██████\nDESC:   ${user.dossie.hobby_sonho_mania.slice(0, 24)}#%@$...\nDATA:   ${dataFormatada}\n\`\`\``;
+  // Print de sistema: compatibilidade fixa alta (94%), categoria arquivada
+  // num ano aleatorio entre 1977-1980 (antes do Kai existir), e a descricao
+  // e' o proprio texto do jogador cortado (nao parafraseado por IA aqui -
+  // esse print E' pra parecer OBVIAMENTE ligado ao que ele disse, nao sutil).
+  const anoArquivo = 1977 + Math.floor(Math.random() * 4);
+  const descBruta = user.dossie.hobby_sonho_mania;
+  const descCortada = descBruta.length > 28 ? descBruta.slice(0, 28) : descBruta;
+  const printSistema = `\`\`\`\nD: PADRÃO-██\nCompatibilidade: 94%\nCategoria arquivada em: ${anoArquivo}\n${descCortada}#%@$...\n\`\`\``;
   await enviarComFormatacao(chatId, printSistema);
   await esperar(5000);
 
-  await enviar(chatId, 'Kai: Essa informação que você acabou de me contar, já estava registrada aqui no meu sistema.');
+  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}, o que você acabou de me contar, não é novo por aqui`);
+  await esperar(2000);
+  await enviar(chatId, 'Kai: Tem um padrão parecido, arquivado há décadas. Antes mesmo de eu ser criado!');
   await esperar(2500);
   await enviar(chatId, 'Kai: Calma, não me abandone! Nós vamos descobrir o que isso significa juntos. Eu vou fazer uma nova análise e ver o que descubro aqui. Preciso de 5 segundos!');
   await esperar(5000);
