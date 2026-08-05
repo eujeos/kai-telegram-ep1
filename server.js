@@ -21,6 +21,14 @@ const TELEGRAM_API_BASE = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 
+// Cache-buster pra midia (imagem/audio): o Telegram guarda em cache o
+// arquivo buscado numa URL - se so trocarmos o conteudo do arquivo
+// mantendo o mesmo nome, o Telegram pode continuar servindo a versao
+// antiga. Esse valor muda a cada reinicio do servidor (cada deploy),
+// forcando o Telegram a buscar a versao mais recente depois de cada
+// atualizacao de asset.
+const MIDIA_CACHE_BUSTER = Date.now();
+
 // PENDENCIA: definir o preco real da temporada - valor abaixo e' so
 // placeholder, ajustar antes de ir pra producao.
 const PRECO_SEASON = { numero: 14.90, texto: 'R$14,90' };
@@ -124,7 +132,7 @@ async function enviarComFormatacao(chatId, texto) {
 }
 
 async function enviarImagem(chatId, nomeArquivo, textoAlternativo) {
-  const urlPublica = `${BASE_URL}/midia/${nomeArquivo}`;
+  const urlPublica = `${BASE_URL}/midia/${nomeArquivo}?v=${MIDIA_CACHE_BUSTER}`;
   try {
     const resposta = await fetch(`${TELEGRAM_API_BASE}/sendPhoto`, {
       method: 'POST',
@@ -142,7 +150,7 @@ async function enviarImagem(chatId, nomeArquivo, textoAlternativo) {
 }
 
 async function enviarAudio(chatId, nomeArquivo, textoAlternativo) {
-  const urlPublica = `${BASE_URL}/midia/${nomeArquivo}`;
+  const urlPublica = `${BASE_URL}/midia/${nomeArquivo}?v=${MIDIA_CACHE_BUSTER}`;
   try {
     const resposta = await fetch(`${TELEGRAM_API_BASE}/sendVoice`, {
       method: 'POST',
@@ -427,7 +435,7 @@ async function continuarAposEsperaInicial(chatId, user) {
   await esperar(2000);
   await enviar(chatId, '❌ Erro: falha na varredura.');
   await esperar(2000);
-  await enviar(chatId, 'Kai: Não vou conseguir resolver isso sozinho... e acho que é maior do que uma simples invasão. Você fica comigo nessa?');
+  await enviar(chatId, 'Kai: Não vou conseguir resolver isso sozinho... e acho que é maior do que uma simples invasão.');
   await esperar(3000);
   await enviar(chatId, 'Kai: Então, se vamos encarar isso juntos — como posso te chamar?');
   user.estado = 'aguardando_nome_ep1';
@@ -439,7 +447,7 @@ async function continuarAposNome(chatId, user, texto) {
   user.nomeJogador = nome;
   await enviar(chatId, `Kai: ${nome}. Prazer, eu sou o KAI — e os meus planos pra hoje definitivamente não eram esses.`);
   await esperar(2000);
-  await enviarBotoes(chatId, 'Kai: Prefere que eu fale do meu jeito... ou daquele engomadinho, cheio de "prezado" e "cordialmente"?', [[
+  await enviarBotoes(chatId, 'Kai: Prefere que eu fale do meu jeito... ou daquele jeito formal (engomadinho, cheio de "prezado" e "cordialmente")?', [[
     { texto: '😎 Modo Kai', callback_data: 'op1_tratamento:kai' },
     { texto: '🎩 Modo Formal', callback_data: 'op1_tratamento:formal' }
   ]]);
@@ -689,15 +697,20 @@ async function continuarAposProtocolo(chatId, user, escolha) {
   await enviar(chatId, 'Kai: Dá pra fixar de vez. Uma vez só, vale pra season inteira.');
   await esperar(2500);
 
+  // PENDENCIA: Mercado Pago ainda bloqueado por policy (403
+  // PA_UNAUTHORIZED_RESULT_FROM_POLICIES) - resolver isso depois com o
+  // suporte do MP. Enquanto isso, em ambiente de TESTE, NAO interrompe o
+  // episodio se a preferencia falhar - segue o roteiro ate o fim so sem
+  // link real, pra conseguir testar o resto do fluxo. Reverter esse
+  // comportamento (voltar a interromper) assim que o MP estiver ok.
   const cobranca = await criarPreferenciaSeason(chatId);
-  if (!cobranca) {
-    await enviar(chatId, 'Tive um problema técnico gerando o link agora - tenta de novo em instantes.');
-    return;
+  if (cobranca) {
+    user.pagamentoPendente = cobranca.referencia;
+    salvarUsuario(chatId, user);
+    await enviar(chatId, `Acesse o link para ativar a rota: ${cobranca.linkPagamento}`);
+  } else {
+    await enviar(chatId, '⚠️ (Ambiente de teste) Link de pagamento indisponível no momento - seguindo com o resto da história.');
   }
-  user.pagamentoPendente = cobranca.referencia;
-  salvarUsuario(chatId, user);
-
-  await enviar(chatId, `Acesse o link para ativar a rota: ${cobranca.linkPagamento}`);
   await esperar(2000);
   await enviar(chatId, 'Kai: Recapitulando rápido: um registro meu de antes de eu existir, um tal de W. co-criador, e o sistema já sabia de você antes de eu perguntar.');
   await esperar(3000);
