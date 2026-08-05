@@ -209,6 +209,12 @@ async function criarPreferenciaSeason(chatId) {
     console.error('MP_ACCESS_TOKEN nao configurado - nao e possivel gerar cobranca.');
     return null;
   }
+  // AVISO: se BASE_URL nao estiver configurado como variavel de ambiente no
+  // Railway, cai no fallback localhost - e o Mercado Pago REJEITA
+  // notification_url que nao seja publica, fazendo a preferencia falhar.
+  if (BASE_URL.includes('localhost')) {
+    console.error('AVISO: BASE_URL esta em localhost - configure a variavel de ambiente BASE_URL com a URL publica do Railway, senao a criacao da preferencia Mercado Pago vai falhar.');
+  }
   const referencia = `${chatId}__${Date.now()}`;
   try {
     const resposta = await fetch('https://api.mercadopago.com/checkout/preferences', {
@@ -229,7 +235,8 @@ async function criarPreferenciaSeason(chatId) {
       })
     });
     if (!resposta.ok) {
-      console.error('Erro ao criar preferencia Mercado Pago:', resposta.status, await resposta.text());
+      const corpoErro = await resposta.text();
+      console.error('Erro ao criar preferencia Mercado Pago:', resposta.status, corpoErro);
       return null;
     }
     const dados = await resposta.json();
@@ -301,25 +308,31 @@ O jogador acabou de responder à pergunta "Olhe bem a imagem novamente. Qual foi
 
 O seu objetivo é fazer parecer que Kai realmente analisou a resposta do jogador. Nunca diga que ele está errado. Aproveite a percepção dele como ponto de partida e conduza naturalmente para a verdadeira descoberta.
 
-A resposta deve revelar, sem parecer uma explicação, usando EXATAMENTE estes fatos (nunca invente datas, nomes ou iniciais diferentes destes - use só o que está listado aqui):
+A resposta deve revelar, sem parecer uma explicação, usando EXATAMENTE estes fatos (nunca invente datas ou nomes diferentes destes - use só o que está listado aqui):
 - O registro foi criado em 21/04/1977 (data exata - não arredonde nem troque o ano).
 - Kai só foi criado no fim dos anos 80.
 - Portanto, esse registro existia antes do próprio Kai existir, e isso desafia toda a lógica.
-- O criador do registro tem as iniciais "J.S." (exatamente essas duas letras - nunca use outras iniciais).
-- Existe outro detalhe ainda mais estranho: Kai sempre acreditou que o seu único criador era o John (seria "J.S." então?), mas tem um segundo nome anotado ali também, abreviado só como "W.".
+- A origem do registro aponta pro John — o único criador que Kai sempre acreditou ter.
+- Existe outro detalhe ainda mais estranho: tem um segundo nome anotado ali também, abreviado só como "W.". Kai nunca soube de um segundo criador.
 
 Finalize aumentando o mistério com uma pergunta ou observação forte sobre quem é W.
 
 REGRA DE FORMATO - MUITO IMPORTANTE (siga à risca):
 - Responda em NO MÁXIMO 3 linhas curtas.
-- Tudo em UMA ÚNICA mensagem (quebras de linha simples entre as linhas - NUNCA use "|||" nem indique separação em várias mensagens).
+- Separe CADA linha com o delimitador "|||" (três pipes, sem espaço) - por exemplo: "linha 1|||linha 2|||linha 3". NÃO use quebra de linha normal, use SEMPRE "|||" entre as linhas.
 - Frases curtas, naturais, cinematográficas - Kai pensando em voz alta.
 - Gere curiosidade, faça o jogador sentir que está investigando junto com Kai.
 - Nunca pareça um chatbot ou um narrador.`;
 
   const resultado = await chamarIATextoLivre(systemPrompt, respostaJogador, 220);
   if (!resultado) return null;
-  return resultado.trim();
+  // Divide pelo delimitador "|||" pedido no prompt e junta com linha em
+  // branco - mais confiavel do que esperar que a IA insira \n\n sozinha.
+  return resultado
+    .split('|||')
+    .map(linha => linha.trim())
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 // ---------------- Jogo do numero (par/impar) - algoritmo Bellos ----------------
@@ -453,15 +466,15 @@ async function continuarAposTratamento(chatId, user, escolha) {
   await enviarImagem(chatId, 'status-bloqueado.png', '🖥️ Registro encontrado. Status: Bloqueado.');
   await esperar(9000); // imagem - buffer de latencia
   await enviar(chatId, 'Kai: Ele nunca deveria ter aparecido pra mim — e algo me diz que o que tem aí dentro responde mais perguntas do que eu gostaria.');
-  await esperar(2500);
+  await esperar(3800); // um pouco mais de tempo pra pessoa processar, mantendo a pressao
   await enviar(chatId, 'Kai: Pra abrir, tem um desafio. Pensa rápido: qual o primeiro número que surge na sua mente? NÃO RESPONDA!');
-  await esperar(1500);
+  await esperar(2200);
   await enviar(chatId, '3');
-  await esperar(1500);
+  await esperar(2200);
   await enviar(chatId, '2');
-  await esperar(1500);
+  await esperar(2200);
   await enviar(chatId, '1');
-  await esperar(1000);
+  await esperar(1500);
 
   user.partida = {
     pool: [...NUMERO_POOL_INICIAL],
@@ -562,11 +575,11 @@ async function continuarAposReacaoImagem(chatId, user, texto) {
   const reacao = await gerarReacaoPrimeiraCoisaEstranha(texto);
   if (reacao) {
     await enviar(chatId, reacao);
-    await esperar(2500);
+    await esperar(4000); // texto com 3 linhas + espacamento - mais tempo de leitura
   } else {
-    // Fallback fixo (max 3 linhas), caso a IA falhe - garante que o episodio nunca trava.
-    await enviar(chatId, 'Kai: Interessante você ter notado isso... mas tem algo bem mais estranho.\nEsse registro é de 21/04/1977 — antes de eu sequer existir. As iniciais batem com "J.S.", meu criador John. Só que tem um segundo nome anotado: "W."\nQuem diabos é esse W.?');
-    await esperar(2500);
+    // Fallback fixo (max 3 linhas, com espacamento), caso a IA falhe - garante que o episodio nunca trava.
+    await enviar(chatId, 'Kai: Interessante você ter notado isso... mas tem algo bem mais estranho.\n\nEsse registro é de 21/04/1977 — antes de eu sequer existir. A origem aponta pro John, meu criador. Só que tem um segundo nome anotado ali: "W."\n\nQuem diabos é esse W.?');
+    await esperar(4000);
   }
 
   await enviar(chatId, 'Kai: Eu preciso de mais respostas! Mas isso vai demorar pra carregar...');
@@ -587,14 +600,16 @@ async function continuarAposHobby(chatId, user, texto) {
   await enviar(chatId, `${user.nomeJogador || 'Você'}...`);
   await esperar(2000);
 
-  // Print de sistema: compatibilidade fixa alta (94%), categoria arquivada
-  // num ano aleatorio entre 1977-1980 (antes do Kai existir), e a descricao
-  // e' o proprio texto do jogador cortado (nao parafraseado por IA aqui -
-  // esse print E' pra parecer OBVIAMENTE ligado ao que ele disse, nao sutil).
+  // Print de sistema: compatibilidade alta e variavel (90-98%), categoria
+  // arquivada num ano aleatorio entre 1977-1980 (antes do Kai existir), e a
+  // descricao e' o proprio texto do jogador cortado (nao parafraseado por
+  // IA aqui - esse print E' pra parecer OBVIAMENTE ligado ao que ele disse,
+  // nao sutil).
+  const compatibilidade = 90 + Math.floor(Math.random() * 9); // 90-98%
   const anoArquivo = 1977 + Math.floor(Math.random() * 4);
   const descBruta = user.dossie.hobby_sonho_mania;
   const descCortada = descBruta.length > 28 ? descBruta.slice(0, 28) : descBruta;
-  const printSistema = `\`\`\`\nD: PADRÃO-██\nCompatibilidade: 94%\nCategoria arquivada em: ${anoArquivo}\n${descCortada}#%@$...\n\`\`\``;
+  const printSistema = `\`\`\`\nD: PADRÃO-██\nCompatibilidade: ${compatibilidade}%\nCategoria arquivada em: ${anoArquivo}\n${descCortada}#%@$...\n\`\`\``;
   await enviarComFormatacao(chatId, printSistema);
   await esperar(5000);
 
@@ -605,7 +620,7 @@ async function continuarAposHobby(chatId, user, texto) {
   await enviar(chatId, 'Kai: Voltei. Achei um documento. Pra abrir, pede uma sequência... mas que sequência é essa?');
   await esperar(1500);
 
-  await enviarBotoes(chatId, 'Kai: Enquanto eu tento decifrar isso... o que você acha que é essa sequência?', [[
+  await enviarBotoes(chatId, 'Kai: Se você fosse chutar de olhos fechados... que tipo de sequência guardaria um segredo desses?', [[
     { texto: '🔢 Uma data', callback_data: 'op1_seq:data' },
     { texto: '🔑 Uma senha antiga', callback_data: 'op1_seq:senha' },
     { texto: '🧬 Um código genético', callback_data: 'op1_seq:genetico' }
@@ -645,8 +660,8 @@ async function continuarInvasaoBecoSemSaida(chatId, user) {
   await enviar(chatId, 'Kai: Protegido por um número proibido. Precisamos descobrir qual é. Mas antes... o que será que tem aí pra alguém esconder assim?');
   await esperar(1500);
 
-  await enviarBotoes(chatId, 'Kai: Me ajuda a especular... o que você acha que é esse protocolo?', [[
-    { texto: '🕵️ Um segredo do meu criador', callback_data: 'op1_protocolo:segredo' },
+  await enviarBotoes(chatId, 'Kai: Confia em mim e chuta... por que será que alguém trancaria isso tão fundo assim?', [[
+    { texto: '🗝️ Algo que era pra ficar esquecido', callback_data: 'op1_protocolo:esquecido' },
     { texto: '⚠️ Algo perigoso demais pra mim saber', callback_data: 'op1_protocolo:perigoso' }
   ]]);
   user.estado = 'aguardando_protocolo_beco_ep1';
@@ -655,7 +670,7 @@ async function continuarInvasaoBecoSemSaida(chatId, user) {
 
 // Enquete sobre o protocolo do documento - flavor, sem efeito no jogo.
 const FLAVOR_PROTOCOLO = {
-  segredo: 'Kai: É, também penso nisso. Todo criador guarda algo, né?',
+  esquecido: 'Kai: É, também penso nisso. Tem cara de coisa enterrada de propósito.',
   perigoso: 'Kai: Essa hipótese me deixa mais nervoso ainda... mas vamos descobrir mesmo assim.'
 };
 
@@ -669,7 +684,7 @@ async function continuarAposProtocolo(chatId, user, escolha) {
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
   await esperar(1500);
 
-  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}? Ele voltou de novo — mas consegui uma rota alternativa, instável, porém consegui.`);
+  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}? Ele voltou de novo — mas dessa vez consegui blindar uma rota alternativa. Essa aqui é firme, não cai como a de antes.`);
   await esperar(2500);
   await enviar(chatId, 'Kai: Dá pra fixar de vez. Uma vez só, vale pra season inteira.');
   await esperar(2500);
