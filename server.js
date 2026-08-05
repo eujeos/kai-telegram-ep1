@@ -19,6 +19,14 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const TELEGRAM_API_BASE = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
+
+// PENDENCIA: modo de teste - quando ativo (variavel de ambiente
+// MODO_TESTE_PAGAMENTO=true no Railway), o botao/texto "ja paguei" libera
+// na hora, sem checar de verdade o Mercado Pago. Serve pra testar o
+// Episodio 2 em diante sem depender do MP estar liberado.
+// IMPORTANTE: apagar essa variavel (ou colocar =false) no Railway antes de
+// ir pra producao, senao qualquer pessoa consegue liberar sem pagar.
+const MODO_TESTE_PAGAMENTO = process.env.MODO_TESTE_PAGAMENTO === 'true';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 
 // Cache-buster pra midia (imagem/audio): o Telegram guarda em cache o
@@ -1165,7 +1173,7 @@ async function processarMensagem(chatId, user, texto) {
   }
   if (user.estado === 'aguardando_pagamento_season') {
     if (texto.trim().toLowerCase() === 'paguei') {
-      const aprovado = user.pagamentoPendente ? await pagamentoAprovado(user.pagamentoPendente) : false;
+      const aprovado = MODO_TESTE_PAGAMENTO || (user.pagamentoPendente ? await pagamentoAprovado(user.pagamentoPendente) : false);
       if (aprovado) {
         await confirmarPagamentoEIniciarEpisodio2(chatId, user);
         return;
@@ -1240,7 +1248,7 @@ async function processarCallback(chatId, user, callbackData) {
     return;
   }
   if (user.estado === 'aguardando_pagamento_season' && acao === 'op1_pagamento') {
-    const aprovado = user.pagamentoPendente ? await pagamentoAprovado(user.pagamentoPendente) : false;
+    const aprovado = MODO_TESTE_PAGAMENTO || (user.pagamentoPendente ? await pagamentoAprovado(user.pagamentoPendente) : false);
     if (aprovado) {
       await confirmarPagamentoEIniciarEpisodio2(chatId, user);
       return;
