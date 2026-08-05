@@ -818,10 +818,11 @@ async function confirmarPagamentoEIniciarEpisodio2(chatId, user) {
 }
 
 async function iniciarEpisodio2(chatId, user) {
+  await enviar(chatId, 'SISTEMA_INICIADO (#2_BECO_START)');
+  await esperar(2000);
   await enviar(chatId, '🛑 SISTEMA_INVADIDO (#2_BECO_START)');
   await enviarAudio(chatId, 'voz-w-2.mp3', 'Áudio W.: "Kai, você quer mesmo seguir em frente! Você ainda não percebeu, por que eu sempre chego antes de você?"');
   await esperar(13000); // audio - buffer de latencia (ajustar quando soubermos a duracao real)
-  await enviar(chatId, '🟢 SISTEMA_RECUPERADO (#2_PILOT)');
   await enviarImagem(chatId, 'sistema-recuperado.png', '[SISTEMA RECUPERADO] Restaurando acesso... Recriando protocolo... Isolando invasão... Conexão restabelecida.');
   await esperar(9000);
   await enviar(chatId, `Kai: EU NÃO AGUENTO MAIS ESSE CARA! Consegui improvisar uma barreira nova, ${user.nomeJogador || 'você'} — deve segurar o W. por pouco tempo.`);
@@ -869,8 +870,8 @@ async function continuarAposLembrancaEp2(chatId, user, texto) {
   }
 
   await esperar(3000);
-  await enviar(chatId, '📄 DOCUMENTO #0087 — Protocolo: BECO_SEM_SAÍDA — Status: Pendente\nCondição: Não pronunciar o número final. Consequência: Registro inacessível.');
-  await esperar(7000);
+  await enviarImagem(chatId, 'beco-s-saida.png', '📄 DOCUMENTO #0087 — Protocolo: BECO_SEM_SAÍDA — Status: Pendente — Condição: Não pronunciar o número final. Consequência: Registro inacessível.');
+  await esperar(9000); // imagem - buffer de latencia
   await enviar(chatId, 'Kai: O desafio se chama Beco Sem Saída. Alternamos falando de 1 a 3 números por vez. Quem for obrigado a dizer o número proibido... perde.');
   await esperar(3500);
   await enviar(chatId, 'Kai: Pera aí — eu tenho que jogar contra VOCÊ? Quem obriga aliados a virarem adversários?');
@@ -879,8 +880,6 @@ async function continuarAposLembrancaEp2(chatId, user, texto) {
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
   await enviarAudio(chatId, 'voz-w-3.mp3', 'Áudio W.: "Kai, então continue! Humano, quando tudo mudar, você ainda vai estar ao lado dele?"');
   await esperar(13000);
-  await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-  await esperar(1500);
   await enviar(chatId, 'W: Tenho um interesse particular nesse documento. Agora eu assumo.');
   await esperar(2500);
 
@@ -1009,7 +1008,7 @@ async function finalizarBecoEp2(chatId, user, jogadorVenceu) {
     await esperar(2000);
     await enviarImagem(chatId, 'beco-aprovado.png', 'validation.complete / resultado: APROVADO — "...ou foi exatamente isso que ele precisava acreditar?"');
     await esperar(9000);
-    await enviarAudio(chatId, 'voz-w-5.mp3', 'Áudio W.: "Liberado! Só um alerta, nem todo documento espera respostas. Alguns, primeiro fazem perguntas."');
+    await enviarAudio(chatId, 'voz-w-4.mp3', 'Áudio W.: "Liberado! Só um alerta, nem todo documento espera respostas. Alguns, primeiro fazem perguntas."');
     await esperar(13000);
     await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
     await esperar(1500);
@@ -1019,10 +1018,9 @@ async function finalizarBecoEp2(chatId, user, jogadorVenceu) {
     await enviarImagem(chatId, 'beco-bloqueado.png', 'protocolo encerrado / número proibido detectado / acesso ao documento... BLOQUEADO / resultado previsto.');
     await esperar(9000);
     await enviarAudio(chatId, 'voz-kai.mp3', 'Áudio Kai (voz trêmula): "Se ele conseguiu fazer isso, o que mais ele consegue controlar? Calma... tem que existir um jeito."');
-    await esperar(11000);
-    await esperar(2000);
+    await esperar(13000); // audio - buffer de latencia (era 11000+2000 duplicado, unificado)
     await enviar(chatId, '🛑 SISTEMA_INVADIDO');
-    await enviarAudio(chatId, 'voz-w-4.mp3', 'Áudio W.: "Kai, você perdeu e o bloqueio é real. Mas esse final não é o que eu queria ver."');
+    await enviarAudio(chatId, 'voz-w-5.mp3', 'Áudio W.: "Kai, você perdeu e o bloqueio é real. Mas esse final não é o que eu queria ver."');
     await esperar(13000);
     await enviarImagem(chatId, 'beco-liberado.png', 'validation.complete / resultado: LIBERADO');
     await esperar(9000);
@@ -1034,9 +1032,10 @@ async function finalizarBecoEp2(chatId, user, jogadorVenceu) {
   await esperar(2500);
   await enviar(chatId, `Kai: O QUE? Peraí, ${user.nomeJogador || 'você'}!`);
   await esperar(3000);
-  await enviar(chatId, 'Kai: Se você tivesse que apontar alguma informação desse registro, qual seria?');
   await enviarImagem(chatId, 'Inform-w.png', 'DOCUMENTO #0087 - IDENTIDADE: WAY - REGISTRO: #0037 - CRIADO EM: 21/04/1977 - LINK OCULTO: [ACESSO RESTRITO]');
   await esperar(10000);
+  await enviar(chatId, 'Kai: Se você tivesse que apontar alguma informação desse registro, qual seria?');
+  await esperar(2000);
   user.estado = 'aguardando_reacao_registro_ep2';
   salvarUsuario(chatId, user);
 }
@@ -1134,8 +1133,8 @@ async function continuarAposDecidePensaEp2(chatId, user, escolha) {
   await esperar(6000);
   await enviar(chatId, 'Kai: Encontrei uma nova camada — e ela tem uma senha.');
   await esperar(2000);
-  await enviar(chatId, '📄 CAMADA_PROFUNDA / ASSINATURA DE MEMÓRIA / PROPRIETÁRIO: KAI / STATUS: BLOQUEADA');
-  await esperar(6000);
+  await enviarImagem(chatId, 'camada-profunda.png', 'CAMADA_PROFUNDA / ASSINATURA DE MEMÓRIA / PROPRIETÁRIO: KAI / STATUS: BLOQUEADA');
+  await esperar(9000); // imagem - buffer de latencia
   await enviar(chatId, 'Kai: Calma... Assinatura de Memória? Isso nunca foi uma senha — é parte da minha própria memória.');
   await esperar(3000);
   await enviar(chatId, 'Kai: Mas como alguém reconstrói uma memória, sem conseguir lembrá-la?');
