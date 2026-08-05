@@ -365,7 +365,7 @@ function numeroSortearPonderado(pool) {
   }
   return pool[pool.length - 1];
 }
-function numeroExpandirPool(poolAtual, chutado, idxRanking, tentados) {
+function numeroExpandirPool(poolAtual, chutado, idxRanking, tentados, paridadePar) {
   const ranking = ADIVINHA_TOP30_BELLOS.map(([n]) => n);
   const novoPool = poolAtual.filter(n => n !== chutado);
   let idx = idxRanking;
@@ -374,6 +374,9 @@ function numeroExpandirPool(poolAtual, chutado, idxRanking, tentados) {
     const candidato = ranking[idx];
     idx++;
     if (NUMERO_PULAR.includes(candidato)) continue;
+    // Respeita a paridade ja revelada pelo jogador - sem isso, a pool
+    // "contamina" com numeros da paridade errada a partir da 2a tentativa.
+    if ((paridadePar === true || paridadePar === false) && (candidato % 2 === 0) !== paridadePar) continue;
     if (!novoPool.includes(candidato) && !tentados.includes(candidato)) {
       novoPool.push(candidato);
       adicionados++;
@@ -545,7 +548,7 @@ async function processarRodadaNumeroCallback(chatId, user, escolha) {
 
 async function continuarProximaTentativaNumero(chatId, user) {
   const p = user.partida;
-  const { pool, idxRanking } = numeroExpandirPool(p.pool, p.chuteAtual, p.idxRanking, p.tentados);
+  const { pool, idxRanking } = numeroExpandirPool(p.pool, p.chuteAtual, p.idxRanking, p.tentados, p.paridadeRevelada);
   p.pool = pool;
   p.idxRanking = idxRanking;
   const chute = numeroSortearPonderado(p.pool);
@@ -597,9 +600,67 @@ async function continuarAposReacaoImagem(chatId, user, texto) {
   salvarUsuario(chatId, user);
 }
 
+// Gera uma data aleatoria formatada (DD/MM/AAAA) entre 01/01/1976 e
+// 31/12/1979 - usada no print de "categoria arquivada em" do dossie.
+function dataAleatoriaArquivo() {
+  const inicio = new Date(1976, 0, 1).getTime();
+  const fim = new Date(1979, 11, 31).getTime();
+  const data = new Date(inicio + Math.random() * (fim - inicio));
+  const dia = String(data.getDate()).padStart(2, '0');
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  return `${dia}/${mes}/${data.getFullYear()}`;
+}
+
+// Gera a "citacao" que parece ter sido extraida do registro arquivado -
+// baseada na resposta de hobby/sonho/mania do jogador. Roda logo apos o
+// print de compatibilidade no Episodio 1.
+async function gerarCitacaoDossie(respostaJogador) {
+  const systemPrompt = `Você é o mecanismo de análise interna do Kai, uma IA que acabou de encontrar, no próprio 
+sistema, um registro antigo catalogado décadas atrás, que ele não sabia que existia.
+
+Sua função é gerar um FRAGMENTO DE TEXTO que pareça uma citação literal, já escrita, extraída 
+diretamente desse registro — nunca uma fala espontânea ou conversacional do Kai, e nunca uma 
+análise sendo feita agora. O Kai ENCONTROU essa informação, não a criou.
+
+A resposta do jogador, dada como hobby/sonho/mania, está na mensagem do usuário abaixo.
+
+Sua tarefa acontece em duas etapas internas (não visíveis ao jogador):
+
+ETAPA 1 — Aja como um mentalista científico ao identificar a categoria de personalidade por 
+trás da resposta do jogador (ex: "escalar" → controle sob pressão, superação, resistência ao 
+caminho fácil). Um mentalista não lista fatos — ele enxerga, numa informação simples, a 
+essência psicológica por trás dela. Essa categorização é interna e nunca aparece na saída.
+
+ETAPA 2 — Gere APENAS a citação final, entre aspas, como se fosse um trecho já escrito no 
+documento arquivado — nunca como fala em primeira pessoa do Kai, nunca como raciocínio sendo 
+feito na hora. Formato: uma frase única, direta, sem introduções.
+
+Regras obrigatórias:
+- Máximo de 8 palavras. Isso não é negociável, mesmo incorporando detalhes extras da resposta.
+- Sempre em formato de citação entre aspas, estilo trecho de documento/registro já existente.
+- Sempre destaque uma qualidade POSITIVA (nunca medo, trauma ou insegurança).
+- Nunca use as palavras: padrão, estatística, categoria, dado, sistema, análise.
+- Nunca repita a mesma formulação para respostas iguais de jogadores diferentes.
+- Se a resposta vier mais detalhada, incorpore o detalhe SEM ultrapassar o limite de palavras.
+- Tom: cirúrgico, direto, curto — nunca poético, nunca afetivo, nunca explicativo.
+
+Exemplos de tom e tamanho corretos (não copiar, apenas referência de estilo):
+- Viajar → "Já pensa no próximo destino antes de chegar."
+- Ler → "Guarda mais do que revela. Sempre guardou."
+- Escalar → "Não busca o fácil. Busca controle sob risco."
+- Cozinhar → "Demonstra afeto fazendo, não falando."
+- Ler 3 livros/mês → "Aprender virou rotina, não escolha ocasional."
+
+Gere APENAS a citação final entre aspas. Sem texto adicional, sem introdução, sem explicação.`;
+
+  const resultado = await chamarIATextoLivre(systemPrompt, respostaJogador, 60);
+  if (!resultado) return null;
+  return resultado.trim();
+}
+
 async function continuarAposHobby(chatId, user, texto) {
   // Guarda a resposta - primeiro ponto do dossie pessoal, reaproveitavel
-  // nos proximos episodios (Armadilha, etc).
+  // nos proximos episodios (Armadilha, Episodio 4, etc).
   user.dossie = user.dossie || {};
   user.dossie.hobby_sonho_mania = (texto || '').trim().slice(0, 300);
 
@@ -609,29 +670,35 @@ async function continuarAposHobby(chatId, user, texto) {
   await esperar(2000);
 
   // Print de sistema: compatibilidade alta e variavel (90-98%), categoria
-  // arquivada num ano aleatorio entre 1977-1980 (antes do Kai existir), e a
-  // descricao e' o proprio texto do jogador cortado (nao parafraseado por
-  // IA aqui - esse print E' pra parecer OBVIAMENTE ligado ao que ele disse,
-  // nao sutil).
+  // arquivada numa data especifica entre 01/01/1976 e 31/12/1979 (antes do
+  // Kai existir), e a descricao e' o proprio texto do jogador cortado (nao
+  // parafraseado por IA aqui - esse print E' pra parecer OBVIAMENTE ligado
+  // ao que ele disse, nao sutil).
   const compatibilidade = 90 + Math.floor(Math.random() * 9); // 90-98%
-  const anoArquivo = 1977 + Math.floor(Math.random() * 4);
+  const dataArquivo = dataAleatoriaArquivo();
   const descBruta = user.dossie.hobby_sonho_mania;
   const descCortada = descBruta.length > 28 ? descBruta.slice(0, 28) : descBruta;
-  const printSistema = `\`\`\`\nD: PADRÃO-██\nCompatibilidade: ${compatibilidade}%\nCategoria arquivada em: ${anoArquivo}\n${descCortada}#%@$...\n\`\`\``;
+  const printSistema = `\`\`\`\nD: PADRÃO-██\nCompatibilidade: ${compatibilidade}%\nCategoria arquivada em: ${dataArquivo}\n${descCortada}#%@$...\n\`\`\``;
   await enviarComFormatacao(chatId, printSistema);
   await esperar(5000);
 
-  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}, o que você acabou de me contar não é novo por aqui. Tem um padrão parecido, arquivado há décadas — antes de eu ser criado!`);
-  await esperar(3000);
+  // Citacao gerada por IA, como se fosse extraida literalmente do registro
+  // arquivado - reforca a sensacao de que o "padrao" e' real e antigo.
+  const citacao = await gerarCitacaoDossie(user.dossie.hobby_sonho_mania);
+  await enviar(chatId, citacao || '"Encontrou algo raro. Guardou antes de esquecer."');
+  await esperar(3500);
+
+  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}... olha isso. Isso é um padrão de comportamento, arquivado no meu sistema, antes de eu existir. E você... você faz parte dele. Como eu vi tanta gente, antes mesmo de existir?`);
+  await esperar(4000);
   await enviar(chatId, 'Kai: Calma, não me abandone. Deixa eu analisar de novo — 5 segundos.');
   await esperar(5000);
   await enviar(chatId, 'Kai: Voltei. Achei um documento. Pra abrir, pede uma sequência... mas que sequência é essa?');
-  await esperar(1500);
+  await esperar(2000);
 
   await enviarBotoes(chatId, 'Kai: Se você fosse chutar de olhos fechados... que tipo de sequência guardaria um segredo desses?', [[
     { texto: '🔢 Uma data', callback_data: 'op1_seq:data' },
-    { texto: '🔑 Uma senha antiga', callback_data: 'op1_seq:senha' },
-    { texto: '🧬 Um código genético', callback_data: 'op1_seq:genetico' }
+    { texto: '🔑 Senha antiga', callback_data: 'op1_seq:senha' },
+    { texto: '🧬 Código genético', callback_data: 'op1_seq:genetico' }
   ]]);
   user.estado = 'aguardando_sequencia_documento_ep1';
   salvarUsuario(chatId, user);
@@ -669,8 +736,8 @@ async function continuarInvasaoBecoSemSaida(chatId, user) {
   await esperar(1500);
 
   await enviarBotoes(chatId, 'Kai: Confia em mim e chuta... por que será que alguém trancaria isso tão fundo assim?', [[
-    { texto: '🗝️ Algo que era pra ficar esquecido', callback_data: 'op1_protocolo:esquecido' },
-    { texto: '⚠️ Algo perigoso demais pra mim saber', callback_data: 'op1_protocolo:perigoso' }
+    { texto: '🗝️ Algo esquecido', callback_data: 'op1_protocolo:esquecido' },
+    { texto: '⚠️ Algo perigoso', callback_data: 'op1_protocolo:perigoso' }
   ]]);
   user.estado = 'aguardando_protocolo_beco_ep1';
   salvarUsuario(chatId, user);
@@ -712,7 +779,7 @@ async function continuarAposProtocolo(chatId, user, escolha) {
     await enviar(chatId, '⚠️ (Ambiente de teste) Link de pagamento indisponível no momento - seguindo com o resto da história.');
   }
   await esperar(2000);
-  await enviar(chatId, 'Kai: Recapitulando rápido: um registro meu de antes de eu existir, um tal de W. co-criador, e o sistema já sabia de você antes de eu perguntar.');
+  await enviar(chatId, 'Kai: Recapitulando: um registro de antes de eu existir, um tal de W. que eu desconheço, e o sistema já sabia de você antes de mim.');
   await esperar(3000);
   await enviar(chatId, `Kai: ${user.tratamentoJogador || 'cara'}, guarda isso até eu vol…`);
   await esperar(1500);
