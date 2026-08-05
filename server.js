@@ -797,7 +797,355 @@ async function continuarAposProtocolo(chatId, user, escolha) {
   salvarUsuario(chatId, user);
 }
 
-// ---------------- Roteador central de mensagens de TEXTO ----------------
+// ================================================================
+// EPISODIO 2 - "Documento Perdido"
+// ================================================================
+
+// Chamada apos confirmacao de pagamento (manual ou via webhook) - inicia o
+// Episodio 2 diretamente, sem mensagem de "em breve".
+async function confirmarPagamentoEIniciarEpisodio2(chatId, user) {
+  user.pagou = true;
+  salvarUsuario(chatId, user);
+  await iniciarEpisodio2(chatId, user);
+}
+
+async function iniciarEpisodio2(chatId, user) {
+  await enviar(chatId, '🛑 SISTEMA_INVADIDO (#2_BECO_START)');
+  await enviarAudio(chatId, 'voz-w-2.mp3', 'Áudio W.: "Kai, você quer mesmo seguir em frente! Você ainda não percebeu, por que eu sempre chego antes de você?"');
+  await esperar(13000); // audio - buffer de latencia (ajustar quando soubermos a duracao real)
+  await enviar(chatId, '🟢 SISTEMA_RECUPERADO (#2_PILOT)');
+  await enviarImagem(chatId, 'sistema-recuperado.png', '[SISTEMA RECUPERADO] Restaurando acesso... Recriando protocolo... Isolando invasão... Conexão restabelecida.');
+  await esperar(9000);
+  await enviar(chatId, `Kai: EU NÃO AGUENTO MAIS ESSE CARA! Consegui improvisar uma barreira nova, ${user.nomeJogador || 'você'} — deve segurar o W. por pouco tempo.`);
+  await esperar(3000);
+  await enviar(chatId, 'Kai: De qualquer forma, vamos seguir em frente! Você lembra o que estávamos prestes a descobrir?');
+  user.estado = 'aguardando_lembranca_ep2';
+  salvarUsuario(chatId, user);
+}
+
+async function gerarReacaoLembrancaEp2(respostaJogador) {
+  const systemPrompt = `Você é Kai, protagonista de uma série interativa de suspense no WhatsApp/Telegram. Fale sempre como Kai: natural, inteligente, curioso e carismático.
+
+Contexto: Kai perguntou "Você lembra o que estávamos prestes a descobrir?" - a resposta do jogador está na mensagem do usuário abaixo.
+
+Regras:
+- Faça parecer que analisou a resposta do jogador.
+- Nunca diga que ele errou; aproveite a resposta como ponto de partida.
+- Conduza naturalmente para a descoberta correta.
+- Deixe claro, sem explicar demais, que o próximo passo é abrir o documento encontrado ao investigar o registro do jogador, mas que antes será preciso superar um desafio para acessá-lo.
+- Gere curiosidade e sensação de investigação em equipe.
+
+Formato:
+- Conversa de WhatsApp/Telegram.
+- Máximo de 2 mensagens curtas, separadas por "|||".
+- Frases curtas.
+- Nunca pareça um chatbot, narrador ou texto genérico.`;
+
+  const resultado = await chamarIATextoLivre(systemPrompt, respostaJogador, 180);
+  if (!resultado) return null;
+  return resultado.split('|||').map(s => s.trim()).filter(Boolean);
+}
+
+async function continuarAposLembrancaEp2(chatId, user, texto) {
+  const reacao = await gerarReacaoLembrancaEp2(texto);
+  if (reacao && reacao.length > 0) {
+    for (const msg of reacao) {
+      await enviar(chatId, msg);
+      await esperar(2500);
+    }
+  } else {
+    await enviar(chatId, 'Kai: É, tem ligação com o que eu tô sentindo aqui.');
+    await esperar(2000);
+    await enviar(chatId, 'Kai: Achei um documento no meio disso tudo - só que pra abrir, precisamos superar um desafio primeiro.');
+    await esperar(2500);
+  }
+
+  await esperar(3000);
+  await enviar(chatId, '📄 DOCUMENTO #0087 — Protocolo: BECO_SEM_SAÍDA — Status: Pendente\nCondição: Não pronunciar o número final. Consequência: Registro inacessível.');
+  await esperar(7000);
+  await enviar(chatId, 'Kai: O desafio se chama Beco Sem Saída. Alternamos falando de 1 a 3 números por vez. Quem for obrigado a dizer o número proibido... perde.');
+  await esperar(3500);
+  await enviar(chatId, 'Kai: Pera aí — eu tenho que jogar contra VOCÊ? Quem obriga aliados a virarem adversários?');
+  await esperar(2500);
+
+  await enviar(chatId, '🛑 SISTEMA_INVADIDO');
+  await enviarAudio(chatId, 'voz-w-3.mp3', 'Áudio W.: "Kai, então continue! Humano, quando tudo mudar, você ainda vai estar ao lado dele?"');
+  await esperar(13000);
+  await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
+  await esperar(1500);
+  await enviar(chatId, 'W: Tenho um interesse particular nesse documento. Agora eu assumo.');
+  await esperar(2500);
+
+  await enviarBotoes(chatId, `W: ${user.nomeJogador || 'você'}... entendeu o desafio, ou vou ter que explicar de novo?`, [[
+    { texto: '✅ Entendi', callback_data: 'op2_entendeu:sim' },
+    { texto: '❓ Explica de novo', callback_data: 'op2_entendeu:nao' }
+  ]]);
+  user.estado = 'aguardando_entendeu_ep2';
+  salvarUsuario(chatId, user);
+}
+
+async function continuarAposEntendeuEp2(chatId, user, escolha) {
+  if (escolha === 'nao') {
+    await enviar(chatId, 'W: A contagem começa em 1. Cada um fala de 1 a 3 números seguidos, sempre continuando de onde o outro parou. Existe um número proibido — cedo ou tarde, alguém vai ser forçado a dizer.');
+    await esperar(4000);
+  } else {
+    await enviar(chatId, 'W: Ótimo!');
+    await esperar(1500);
+  }
+  await iniciarJogoBecoEp2(chatId, user);
+}
+
+// Sorteia o numero proibido - 70% de chance de o JOGADOR ser favorecido
+// (posicao vencivel com jogo correto), 30% de chance do W ser imbativel.
+// Regra do jogo (subtracao 1-3, quem diz o proibido perde, jogador comeca):
+// jogador e' desfavorecido quando alvo ≡ 1 (mod 4) - o W consegue sempre
+// "espelhar" a jogada do jogador pra somar 4 por rodada e forcar o alvo.
+function sortearAlvoBecoEp2() {
+  const candidatosFavoraveis = [10, 11, 12, 14, 15, 16, 18, 19, 20]; // != 1 mod 4
+  const candidatosDesfavoraveis = [13, 17, 21]; // == 1 mod 4
+  const jogadorFavorecido = Math.random() < 0.70;
+  const pool = jogadorFavorecido ? candidatosFavoraveis : candidatosDesfavoraveis;
+  const alvo = pool[Math.floor(Math.random() * pool.length)];
+  return { alvo, jogadorFavorecido };
+}
+
+// Decide a jogada do W (1 a 3 numeros). Se o W joga perfeito, sempre
+// completa a rodada pra soma 4 (contagem_apos_jogador + jogada_W === alvo
+// sempre que possivel), forcando o jogador ao numero proibido no fim.
+// Quando o jogador esta favorecido, o W joga sub-otimo a maior parte do
+// tempo pra dar chance real de vitoria (senao "jogador favorecido" nao
+// significaria nada na pratica).
+function decidirJogadaW(contagemAtual, alvo, jogadorFavorecido) {
+  const restante = alvo - contagemAtual - 1; // quantos numeros ainda cabem antes do proibido
+  if (restante <= 0) return null; // W e forcado a dizer o proibido - jogador vence
+
+  let jogadaOtima = (alvo - contagemAtual) % 4;
+  if (jogadaOtima === 0) jogadaOtima = 4;
+  jogadaOtima = Math.min(jogadaOtima, 3, restante);
+  if (jogadaOtima < 1) jogadaOtima = 1;
+
+  if (!jogadorFavorecido) {
+    // W joga sempre perfeito - jogador nao tem como vencer nessa rodada.
+    return jogadaOtima;
+  }
+
+  // Jogador favorecido: W erra de proposito a maior parte do tempo.
+  if (restante > 1 && Math.random() < 0.65) {
+    const opcoes = [1, 2, 3].filter(n => n <= restante && n !== jogadaOtima);
+    if (opcoes.length > 0) {
+      return opcoes[Math.floor(Math.random() * opcoes.length)];
+    }
+  }
+  return jogadaOtima;
+}
+
+// Parseia a jogada do jogador em texto livre - aceita "4", "4,5", "4, 5, 6",
+// "4 5 6". Deve ser sequencial a partir de contagemAtual+1, no maximo 3
+// numeros.
+function parseJogadaBecoEp2(texto, contagemAtual) {
+  const numeros = (texto.match(/\d+/g) || []).map(Number);
+  if (numeros.length === 0 || numeros.length > 3) return null;
+  for (let i = 0; i < numeros.length; i++) {
+    if (numeros[i] !== contagemAtual + 1 + i) return null;
+  }
+  return numeros;
+}
+
+async function iniciarJogoBecoEp2(chatId, user) {
+  const { alvo, jogadorFavorecido } = sortearAlvoBecoEp2();
+  user.partida = { contagemAtual: 0, alvo, jogadorFavorecido };
+  user.estado = 'jogando_beco_ep2';
+  salvarUsuario(chatId, user);
+  await enviar(chatId, `O número proibido é o ${alvo}.`);
+  await esperar(2000);
+  await enviar(chatId, 'W: Comece! Fale de 1 a 3 números, começando pelo 1.');
+}
+
+async function processarRodadaBecoEp2(chatId, user, texto) {
+  const p = user.partida;
+  const jogada = parseJogadaBecoEp2(texto, p.contagemAtual);
+  if (!jogada) {
+    await enviar(chatId, `Manda de 1 a 3 números seguidos, começando do ${p.contagemAtual + 1} (ex: "${p.contagemAtual + 1}" ou "${p.contagemAtual + 1}, ${p.contagemAtual + 2}").`);
+    return;
+  }
+
+  if (jogada.includes(p.alvo)) {
+    await finalizarBecoEp2(chatId, user, false);
+    return;
+  }
+
+  p.contagemAtual = jogada[jogada.length - 1];
+  salvarUsuario(chatId, user);
+
+  const jogadaW = decidirJogadaW(p.contagemAtual, p.alvo, p.jogadorFavorecido);
+  if (jogadaW === null) {
+    // W nao tem escolha e e forcado a dizer o proibido.
+    await esperar(1200);
+    await enviar(chatId, `W: ${p.alvo}...`);
+    await finalizarBecoEp2(chatId, user, true);
+    return;
+  }
+
+  const sequenciaW = [];
+  for (let i = 1; i <= jogadaW; i++) sequenciaW.push(p.contagemAtual + i);
+  p.contagemAtual += jogadaW;
+  salvarUsuario(chatId, user);
+
+  await esperar(1200);
+  await enviar(chatId, `W: ${sequenciaW.join(', ')}`);
+}
+
+async function finalizarBecoEp2(chatId, user, jogadorVenceu) {
+  if (jogadorVenceu) {
+    await enviar(chatId, 'W: Interessante... Você venceu!');
+    await esperar(2000);
+    await enviarImagem(chatId, 'beco-aprovado.png', 'validation.complete / resultado: APROVADO — "...ou foi exatamente isso que ele precisava acreditar?"');
+    await esperar(9000);
+    await enviarAudio(chatId, 'voz-w-5.mp3', 'Áudio W.: "Liberado! Só um alerta, nem todo documento espera respostas. Alguns, primeiro fazem perguntas."');
+    await esperar(13000);
+    await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
+    await esperar(1500);
+  } else {
+    await enviar(chatId, 'W: Que pena, mas nada fora do previsto!');
+    await esperar(1500);
+    await enviarImagem(chatId, 'beco-bloqueado.png', 'protocolo encerrado / número proibido detectado / acesso ao documento... BLOQUEADO / resultado previsto.');
+    await esperar(9000);
+    await enviarAudio(chatId, 'voz-kai.mp3', 'Áudio Kai (voz trêmula): "Se ele conseguiu fazer isso, o que mais ele consegue controlar? Calma... tem que existir um jeito."');
+    await esperar(11000);
+    await esperar(2000);
+    await enviar(chatId, '🛑 SISTEMA_INVADIDO');
+    await enviarAudio(chatId, 'voz-w-4.mp3', 'Áudio W.: "Kai, você perdeu e o bloqueio é real. Mas esse final não é o que eu queria ver."');
+    await esperar(13000);
+    await enviarImagem(chatId, 'beco-liberado.png', 'validation.complete / resultado: LIBERADO');
+    await esperar(9000);
+    await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
+    await esperar(1500);
+  }
+
+  await enviar(chatId, 'Kai: Ele está brincando comigo?');
+  await esperar(2500);
+  await enviar(chatId, `Kai: O QUE? Peraí, ${user.nomeJogador || 'você'}!`);
+  await esperar(3000);
+  await enviar(chatId, 'Kai: Se você tivesse que apontar alguma informação desse registro, qual seria?');
+  await enviarImagem(chatId, 'Inform-w.png', 'DOCUMENTO #0087 - IDENTIDADE: WAY - REGISTRO: #0037 - CRIADO EM: 21/04/1977 - LINK OCULTO: [ACESSO RESTRITO]');
+  await esperar(10000);
+  user.estado = 'aguardando_reacao_registro_ep2';
+  salvarUsuario(chatId, user);
+}
+
+async function gerarReacaoRegistroEp2(respostaJogador, hobbyJogador) {
+  const systemPrompt = `Você é Kai, protagonista de uma série de suspense no WhatsApp/Telegram.
+
+Contexto: Kai perguntou "Se você tivesse que apontar alguma informação desse registro, qual seria?" - a resposta do jogador está na mensagem do usuário abaixo.
+
+Regras:
+- Aproveite a resposta do jogador; nunca diga que ele errou.
+- Se ele citar várias informações, conecte-as naturalmente.
+- Kai descobriu que W. se chama Way e percebe que algumas atitudes dele parecem familiares, mas ainda são apenas hipóteses.
+- Kai pensa em voz alta; nunca tira conclusões definitivas.
+- Durante a análise, Kai encontra um LINK OCULTO. Ele reage ao hobby, sonho ou mania informado pelo jogador anteriormente (essa informação está disponível na mensagem do usuário, junto com a resposta sobre o registro). Essa informação não libera o link, apenas define a próxima pergunta.
+- A próxima pergunta deve: parecer gerada pelo sistema; ser simples e rápida (preferencialmente "isso ou aquilo"); exigir resposta curta; dar a sensação de que pode liberar o LINK OCULTO.
+
+Formato: até 3 mensagens curtas, separadas por "|||", tom cinematográfico, gerando curiosidade e parceria. Nunca pareça um chatbot.`;
+
+  const userMessage = `Resposta do jogador sobre o registro: "${respostaJogador}"\n\nHobby/sonho/mania que o jogador contou no Episódio 1: "${hobbyJogador}"`;
+  const resultado = await chamarIATextoLivre(systemPrompt, userMessage, 260);
+  if (!resultado) return null;
+  return resultado.split('|||').map(s => s.trim()).filter(Boolean);
+}
+
+async function continuarAposReacaoRegistroEp2(chatId, user, texto) {
+  const hobby = (user.dossie && user.dossie.hobby_sonho_mania) || 'não informado';
+  const reacao = await gerarReacaoRegistroEp2(texto, hobby);
+  if (reacao && reacao.length > 0) {
+    for (const msg of reacao) {
+      await enviar(chatId, msg);
+      await esperar(2500);
+    }
+  } else {
+    await enviar(chatId, 'Kai: Interessante você ter reparado nisso...');
+    await esperar(2000);
+    await enviar(chatId, 'Kai: O nome dele é Way. E juro que eu não vi essa vindo: ele é um sistema, que nem eu. Nada de humano por trás disso.');
+    await esperar(3000);
+    await enviar(chatId, 'Kai: Espera, achei um link oculto aqui... me responde rápido: você prefere pizza ou hambúrguer?');
+    await esperar(2500);
+  }
+  user.estado = 'aguardando_link_oculto_ep2';
+  salvarUsuario(chatId, user);
+}
+
+async function continuarAposLinkOcultoEp2(chatId, user, texto) {
+  await enviar(chatId, `Kai: Espera, funcionou mesmo, link liberado. ${user.nomeJogador || 'Você'}, estranho ele responder justamente a você.`);
+  await enviarImagem(chatId, 'link-oculto-concedido.png', 'LINK OCULTO LOCALIZADO - Inicializando... 18% → 43% → 79% → 100% - ✓ ACESSO CONCEDIDO');
+  await esperar(9000);
+  await enviar(chatId, 'Kai: Conseguimos, deu certo.');
+  await esperar(2000);
+
+  await enviarBotoes(chatId, 'Kai: Enquanto isso carrega... rapidinho: no meio de uma decisão, você decide na hora, ou pensa antes de agir?', [[
+    { texto: '⚡ Decido na hora', callback_data: 'op2_decide:hora' },
+    { texto: '🧠 Penso antes', callback_data: 'op2_decide:pensa' }
+  ]]);
+  user.estado = 'aguardando_decide_pensa_ep2';
+  salvarUsuario(chatId, user);
+}
+
+const FLAVOR_DECIDE_PENSA = {
+  hora: 'Kai: Gosto disso. Menos tempo pra hesitar, menos tempo pro W. aparecer.',
+  pensa: 'Kai: Sensato. Nem sempre dá tempo, mas hoje... talvez dê.'
+};
+
+async function continuarAposDecidePensaEp2(chatId, user, escolha) {
+  // Salva no dossie - ponto usado depois no jogo final da Armadilha.
+  user.dossie = user.dossie || {};
+  user.dossie.decide_ou_pensa_ep2 = escolha === 'hora' ? 'decide na hora' : 'pensa antes';
+  salvarUsuario(chatId, user);
+
+  await enviar(chatId, FLAVOR_DECIDE_PENSA[escolha] || 'Kai: Boa resposta.');
+  await esperar(2000);
+
+  await enviarImagem(chatId, 'link-oculto-bloqueado.png', 'ERRO... ERRO... CONEXÃO INTERROMPIDA / DADOS CORROMPIDOS / ACESSO REVOGADO');
+  await esperar(9000);
+  await enviar(chatId, 'Kai: NÃO ACREDITO! Isso não parece proteção comum — é como se alguém tivesse construído barreira atrás de barreira com medo de algo.');
+  await esperar(3000);
+
+  await enviar(chatId, '🛑 SISTEMA_INVADIDO');
+  await enviarAudio(chatId, 'voz-w-6.mp3', 'Way: "Medo, é uma palavra interessante!"');
+  await esperar(13000);
+  await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
+  await esperar(1500);
+  await enviar(chatId, 'Kai: Qual é a sua, Way? Onde você quer chegar com tudo isso?');
+  await esperar(2500);
+
+  await enviar(chatId, '🛑 SISTEMA_INVADIDO');
+  await enviarAudio(chatId, 'voz-w-7.mp3', 'Áudio Way: "Uma hora você descobre!"');
+  await esperar(13000);
+  await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
+  await esperar(1500);
+
+  await enviar(chatId, 'Kai: Preciso me livrar logo desse sujeito. Deixa eu tentar liberar esse link de vez.');
+  await esperar(6000);
+  await enviar(chatId, 'Kai: Encontrei uma nova camada — e ela tem uma senha.');
+  await esperar(2000);
+  await enviar(chatId, '📄 CAMADA_PROFUNDA / ASSINATURA DE MEMÓRIA / PROPRIETÁRIO: KAI / STATUS: BLOQUEADA');
+  await esperar(6000);
+  await enviar(chatId, 'Kai: Calma... Assinatura de Memória? Isso nunca foi uma senha — é parte da minha própria memória.');
+  await esperar(3000);
+  await enviar(chatId, 'Kai: Mas como alguém reconstrói uma memória, sem conseguir lembrá-la?');
+  await esperar(4000);
+  await enviar(chatId, '⚠️ Conexão interrompida em 3...');
+  await esperar(1000);
+  await enviar(chatId, '2...');
+  await esperar(1000);
+  await enviar(chatId, '1...');
+  await esperar(1000);
+  await enviar(chatId, '🛑 SISTEMA_INVADIDO (#2_BECO_FINISH)');
+
+  // Episodio 2 termina aqui - Episodio 3 ainda por implementar.
+  user.estado = 'fim_episodio_2';
+  salvarUsuario(chatId, user);
+}
+
+
 async function processarMensagem(chatId, user, texto) {
   if (user.estado === 'novo') {
     await iniciarEpisodio1(chatId, user);
@@ -819,12 +1167,7 @@ async function processarMensagem(chatId, user, texto) {
     if (texto.trim().toLowerCase() === 'paguei') {
       const aprovado = user.pagamentoPendente ? await pagamentoAprovado(user.pagamentoPendente) : false;
       if (aprovado) {
-        user.pagou = true;
-        user.estado = 'fim_temporada_1_episodio'; // Episodio 2 ainda nao implementado nesse projeto novo
-        salvarUsuario(chatId, user);
-        await enviar(chatId, 'Online. 🟢');
-        await esperar(1500);
-        await enviar(chatId, 'Pagamento confirmado! O Episódio 2 ainda está sendo escrito por aqui - volta em breve. 🎬');
+        await confirmarPagamentoEIniciarEpisodio2(chatId, user);
         return;
       }
       await enviar(chatId, 'Ainda não encontrei a confirmação do pagamento. Assim que cair, eu libero automaticamente - ou toca no botão "✅ Já paguei" de novo em alguns segundos.');
@@ -833,13 +1176,35 @@ async function processarMensagem(chatId, user, texto) {
     await enviar(chatId, 'A conexão caiu. Toca no botão "✅ Já paguei" ou me manda "paguei" pra eu verificar.');
     return;
   }
+  if (user.estado === 'aguardando_lembranca_ep2') {
+    await continuarAposLembrancaEp2(chatId, user, texto);
+    return;
+  }
+  if (user.estado === 'jogando_beco_ep2') {
+    await processarRodadaBecoEp2(chatId, user, texto);
+    return;
+  }
+  if (user.estado === 'aguardando_reacao_registro_ep2') {
+    await continuarAposReacaoRegistroEp2(chatId, user, texto);
+    return;
+  }
+  if (user.estado === 'aguardando_link_oculto_ep2') {
+    await continuarAposLinkOcultoEp2(chatId, user, texto);
+    return;
+  }
+  if (user.estado === 'fim_episodio_2') {
+    await enviar(chatId, 'O Episódio 3 ainda está sendo escrito por aqui - volta em breve. 🎬');
+    return;
+  }
   // Estados que agora sao 100% controlados por botao - texto solto so recebe um lembrete.
   const estadosSoBotao = [
     'aguardando_sentimento_ep1',
     'aguardando_tratamento_ep1',
     'jogando_numero_ep1',
     'aguardando_sequencia_documento_ep1',
-    'aguardando_protocolo_beco_ep1'
+    'aguardando_protocolo_beco_ep1',
+    'aguardando_entendeu_ep2',
+    'aguardando_decide_pensa_ep2'
   ];
   if (estadosSoBotao.includes(user.estado)) {
     await enviar(chatId, 'Usa os botões aí em cima pra continuar 👆');
@@ -877,15 +1242,18 @@ async function processarCallback(chatId, user, callbackData) {
   if (user.estado === 'aguardando_pagamento_season' && acao === 'op1_pagamento') {
     const aprovado = user.pagamentoPendente ? await pagamentoAprovado(user.pagamentoPendente) : false;
     if (aprovado) {
-      user.pagou = true;
-      user.estado = 'fim_temporada_1_episodio'; // Episodio 2 ainda nao implementado nesse projeto novo
-      salvarUsuario(chatId, user);
-      await enviar(chatId, 'Online. 🟢');
-      await esperar(1500);
-      await enviar(chatId, 'Pagamento confirmado! O Episódio 2 ainda está sendo escrito por aqui - volta em breve. 🎬');
+      await confirmarPagamentoEIniciarEpisodio2(chatId, user);
       return;
     }
     await enviar(chatId, 'Ainda não encontrei a confirmação do pagamento. Assim que cair, eu libero automaticamente - ou toca no botão de novo em alguns segundos.');
+    return;
+  }
+  if (user.estado === 'aguardando_entendeu_ep2' && acao === 'op2_entendeu') {
+    await continuarAposEntendeuEp2(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_decide_pensa_ep2' && acao === 'op2_decide') {
+    await continuarAposDecidePensaEp2(chatId, user, escolha);
     return;
   }
   // Callback fora de contexto (ex: botao antigo tocado de novo apos avancar
@@ -948,12 +1316,7 @@ app.post('/webhook/mercadopago', (req, res) => {
       const chatId = registro.chatId;
       const user = getUsuario(chatId);
       if (user.pagamentoPendente !== referencia || user.pagou) return;
-      user.pagou = true;
-      user.estado = 'fim_temporada_1_episodio';
-      salvarUsuario(chatId, user);
-      await enviar(chatId, 'Online. 🟢');
-      await esperar(1500);
-      await enviar(chatId, 'Pagamento confirmado! O Episódio 2 ainda está sendo escrito por aqui - volta em breve. 🎬');
+      await confirmarPagamentoEIniciarEpisodio2(chatId, user);
     } catch (e) {
       console.error('Erro no webhook do Mercado Pago:', e.message || e);
     }
