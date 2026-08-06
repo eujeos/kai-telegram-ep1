@@ -825,65 +825,61 @@ async function iniciarEpisodio2(chatId, user) {
   await esperar(13000); // audio - buffer de latencia (ajustar quando soubermos a duracao real)
   await enviarImagem(chatId, 'sistema-recuperado.png', '[SISTEMA RECUPERADO] Restaurando acesso... Recriando protocolo... Isolando invasão... Conexão restabelecida.');
   await esperar(9000);
-  await enviar(chatId, `Kai: EU NÃO AGUENTO MAIS ESSE CARA! Consegui improvisar uma barreira nova, ${user.nomeJogador || 'você'} — deve segurar o W. por pouco tempo.`);
+  await enviar(chatId, `Kai: EU NÃO AGUENTO MAIS ESSE CARA! Consegui improvisar uma barreira nova contra o W.`);
   await esperar(3000);
-  await enviar(chatId, 'Kai: De qualquer forma, vamos seguir em frente! Você lembra o que estávamos prestes a descobrir?');
+  await enviar(chatId, 'Kai: Embora eu já esteja desconfiado, de fato ele sempre encontra um jeito de ultrapassar minhas barreiras.');
+  await esperar(3000);
+  await enviar(chatId, 'Kai: De qualquer forma, vamos seguir em frente! Me diz uma coisa: Você lembra o que estávamos prestes a descobrir?');
   user.estado = 'aguardando_lembranca_ep2';
   salvarUsuario(chatId, user);
 }
 
 async function gerarReacaoLembrancaEp2(respostaJogador) {
-  const systemPrompt = `Você é Kai, protagonista de uma série interativa de suspense no WhatsApp/Telegram. Fale sempre como Kai: natural, inteligente, curioso e carismático.
+  const systemPrompt = `Você é Kai, protagonista de uma série interativa de suspense conduzida via WhatsApp. Fale sempre como Kai: natural, inteligente, curioso e carismático, nunca como narrador ou chatbot.
 
-Contexto: Kai perguntou "Você lembra o que estávamos prestes a descobrir?" - a resposta do jogador está na mensagem do usuário abaixo.
+CONTEXTO DA CENA:
+Kai perguntou ao jogador: "Você lembra o que estávamos prestes a descobrir?" O jogador respondeu. Você deve responder agora como Kai, dando continuidade natural à investigação.
 
-Regras:
-- Faça parecer que analisou a resposta do jogador.
-- Nunca diga que ele errou; aproveite a resposta como ponto de partida.
-- Conduza naturalmente para a descoberta correta.
-- Deixe claro, sem explicar demais, que o próximo passo é abrir o documento encontrado ao investigar o registro do jogador, mas que antes será preciso superar um desafio para acessá-lo.
-- Gere curiosidade e sensação de investigação em equipe.
+REGRAS OBRIGATÓRIAS:
+- Faça parecer que você realmente considerou a resposta do jogador, não apenas a leu por cima.
+- Nunca diga que ele errou ou esqueceu algo. Use a resposta dele como ponto de partida real, mesmo que ela não seja tecnicamente exata, conduza dali para a descoberta correta de forma natural, como se a lembrança dele tivesse ajudado a reconstruir o raciocínio.
+- Deixe transparecer, sem explicar demais, que o próximo passo é abrir o documento que Kai encontrou ao investigar o registro do jogador, e que será preciso superar um desafio antes de conseguir acessá-lo. Não descreva o desafio em detalhes, apenas insinue que ele existe.
+- Gere uma sensação real de investigação em equipe, como se Kai e o jogador estivessem decifrando isso juntos, lado a lado.
 
-Formato:
-- Conversa de WhatsApp/Telegram.
-- Máximo de 2 mensagens curtas, separadas por "|||".
-- Frases curtas.
-- Nunca pareça um chatbot, narrador ou texto genérico.`;
+FORMATO OBRIGATÓRIO DA RESPOSTA:
+- Máximo de 2 linhas no total. Isso não é negociável.
+- Cada linha deve ser curta, cinematográfica e de leitura fluida, nunca informativa ou técnica.
+- Linguagem completamente natural e humana, como alguém digitando rápido, animado com a descoberta, no meio de uma conversa real de WhatsApp.
+- Nunca use o caractere travessão (—) em nenhum momento da resposta.
+- Nunca soe como chatbot, narrador ou texto genérico.
+- Separe as linhas com o delimitador "|||" (sem quebra de linha normal, sem espaço ao redor).
+- Gere apenas as mensagens finais de Kai, sem títulos, sem explicações fora do personagem.`;
 
-  const resultado = await chamarIATextoLivre(systemPrompt, respostaJogador, 180);
+  const resultado = await chamarIATextoLivre(systemPrompt, respostaJogador, 140);
   if (!resultado) return null;
-  return resultado.split('|||').map(s => s.trim()).filter(Boolean);
+  return resultado.split('|||').map(s => s.trim()).filter(Boolean).join('\n\n');
 }
 
 async function continuarAposLembrancaEp2(chatId, user, texto) {
   const reacao = await gerarReacaoLembrancaEp2(texto);
-  if (reacao && reacao.length > 0) {
-    for (const msg of reacao) {
-      await enviar(chatId, msg);
-      await esperar(2500);
-    }
-  } else {
-    await enviar(chatId, 'Kai: É, tem ligação com o que eu tô sentindo aqui.');
-    await esperar(2000);
-    await enviar(chatId, 'Kai: Achei um documento no meio disso tudo - só que pra abrir, precisamos superar um desafio primeiro.');
-    await esperar(2500);
-  }
+  await enviar(chatId, reacao || 'Kai: É, tem ligação com o que eu tô sentindo aqui.\n\nAchei um documento no meio disso tudo, só que pra abrir vamos ter que passar por um desafio antes.');
+  await esperar(3000);
 
   await esperar(3000);
-  await enviarImagem(chatId, 'beco-s-saida.png', '📄 DOCUMENTO #0087 — Protocolo: BECO_SEM_SAÍDA — Status: Pendente — Condição: Não pronunciar o número final. Consequência: Registro inacessível.');
+  await enviarImagem(chatId, 'beco-s-saida.png', '📄 DOCUMENTO #0087, Protocolo: BECO_SEM_SAÍDA, Status: Pendente. Condição: Não pronunciar o número final. Consequência: Registro inacessível.');
   await esperar(9000); // imagem - buffer de latencia
-  await enviar(chatId, 'Kai: O desafio se chama Beco Sem Saída. Alternamos falando de 1 a 3 números por vez. Quem for obrigado a dizer o número proibido... perde.');
-  await esperar(3500);
-  await enviar(chatId, 'Kai: Pera aí — eu tenho que jogar contra VOCÊ? Quem obriga aliados a virarem adversários?');
+  await enviar(chatId, 'Kai: O desafio se chama Beco Sem Saída.\nFunciona assim: nós alternamos, falando de 1 a 3 números por vez.\nExemplo: eu digo 1, 2, você continua com 3, 4, 5.\nQuem for obrigado a dizer o número proibido... perde.');
+  await esperar(4000);
+  await enviar(chatId, 'Kai: Pera aí, agora que eu entendi: Eu tenho que jogar contra você! Quem obriga aliados a virarem adversários?');
   await esperar(2500);
 
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
-  await enviarAudio(chatId, 'voz-w-3.mp3', 'Áudio W.: "Kai, então continue! Humano, quando tudo mudar, você ainda vai estar ao lado dele?"');
+  await enviarAudio(chatId, 'voz-w-3.mp3', 'Áudio W.: "Humano, quando tudo mudar, você ainda vai estar ao lado dele?"');
   await esperar(13000);
-  await enviar(chatId, 'W: Tenho um interesse particular nesse documento. Agora eu assumo.');
+  await enviar(chatId, 'W: Já que vocês querem seguir, eu tenho um interesse particular nesse documento. Então agora eu assumo.');
   await esperar(2500);
 
-  await enviarBotoes(chatId, `W: ${user.nomeJogador || 'você'}... entendeu o desafio, ou vou ter que explicar de novo?`, [[
+  await enviarBotoes(chatId, `W: ${user.nomeJogador || 'você'}... você entendeu o desafio ou vou ter que perder tempo explicando de novo?`, [[
     { texto: '✅ Entendi', callback_data: 'op2_entendeu:sim' },
     { texto: '❓ Explica de novo', callback_data: 'op2_entendeu:nao' }
   ]]);
@@ -893,9 +889,14 @@ async function continuarAposLembrancaEp2(chatId, user, texto) {
 
 async function continuarAposEntendeuEp2(chatId, user, escolha) {
   if (escolha === 'nao') {
-    await enviar(chatId, 'W: A contagem começa em 1. Cada um fala de 1 a 3 números seguidos, sempre continuando de onde o outro parou. Existe um número proibido — cedo ou tarde, alguém vai ser forçado a dizer.');
-    await esperar(4000);
+    await enviar(chatId, 'W: Sério isso? Vamos por partes, então.\nA contagem começa em 1, cada um fala de 1 a 3 números seguidos, sempre continuando de onde o outro parou.');
+    await esperar(3500);
+    await enviar(chatId, 'W: Exemplo: "1" ou "1, 2" ou "1, 2, 3." A escolha é sempre sua, até não ser mais.\nPorque existe um número proibido. E, cedo ou tarde, alguém vai ser forçado a dizer.\nIsso, ' + (user.nomeJogador || 'você') + ', é a única regra que importa.');
+    await esperar(4500);
+    await enviar(chatId, 'W: Agora, vamos começar logo!');
+    await esperar(2000);
   } else {
+
     await enviar(chatId, 'W: Ótimo!');
     await esperar(1500);
   }
@@ -1006,7 +1007,7 @@ async function finalizarBecoEp2(chatId, user, jogadorVenceu) {
   if (jogadorVenceu) {
     await enviar(chatId, 'W: Interessante... Você venceu!');
     await esperar(2000);
-    await enviarImagem(chatId, 'beco-aprovado.png', 'validation.complete / resultado: APROVADO — "...ou foi exatamente isso que ele precisava acreditar?"');
+    await enviarImagem(chatId, 'beco-aprovado.png', 'validation.complete / resultado: APROVADO, "...ou foi exatamente isso que ele precisava acreditar?"');
     await esperar(9000);
     await enviarAudio(chatId, 'voz-w-4.mp3', 'Áudio W.: "Liberado! Só um alerta, nem todo documento espera respostas. Alguns, primeiro fazem perguntas."');
     await esperar(13000);
@@ -1041,48 +1042,54 @@ async function finalizarBecoEp2(chatId, user, jogadorVenceu) {
 }
 
 async function gerarReacaoRegistroEp2(respostaJogador, hobbyJogador) {
-  const systemPrompt = `Você é Kai, protagonista de uma série de suspense no WhatsApp/Telegram.
+  const systemPrompt = `Você é Kai, protagonista de uma série interativa de suspense conduzida via WhatsApp. Você está analisando, em tempo real, um registro do sistema junto com o jogador, tentando entender uma trava chamada LINK OCULTO.
 
-Contexto: Kai perguntou "Se você tivesse que apontar alguma informação desse registro, qual seria?" - a resposta do jogador está na mensagem do usuário abaixo.
+CONTEXTO DA CENA:
+Kai perguntou ao jogador: "Se você tivesse que apontar alguma informação desse registro, qual seria?" O jogador respondeu. Você deve responder agora como Kai, dando continuidade natural à investigação.
 
-Regras:
-- Aproveite a resposta do jogador; nunca diga que ele errou.
-- Se ele citar várias informações, conecte-as naturalmente.
-- Kai descobriu que W. se chama Way e percebe que algumas atitudes dele parecem familiares, mas ainda são apenas hipóteses.
-- Kai pensa em voz alta; nunca tira conclusões definitivas.
-- Durante a análise, Kai encontra um LINK OCULTO. Ele reage ao hobby, sonho ou mania informado pelo jogador anteriormente (essa informação está disponível na mensagem do usuário, junto com a resposta sobre o registro). Essa informação não libera o link, apenas define a próxima pergunta.
-- A próxima pergunta deve: parecer gerada pelo sistema; ser simples e rápida (preferencialmente "isso ou aquilo"); exigir resposta curta; dar a sensação de que pode liberar o LINK OCULTO.
+O QUE VOCÊ SABE (e deve deixar transparecer sutilmente, sem afirmar como fato):
+Kai descobriu que W. se chama Way, e percebe que algumas atitudes de Way parecem familiares, mas trata isso apenas como hipótese, nunca como conclusão. Kai pensa em voz alta, dividindo o raciocínio com o jogador como se estivessem investigando juntos, lado a lado.
 
-Formato: até 3 mensagens curtas, separadas por "|||", tom cinematográfico, gerando curiosidade e parceria. Nunca pareça um chatbot.`;
+REGRA CENTRAL DA RESPOSTA:
+Aproveite genuinamente o que o jogador respondeu na pergunta sobre o registro. Nunca diga que ele errou ou que a resposta foi insuficiente. Se ele mencionou mais de uma informação, conecte essas informações entre si de forma natural, como se cada peça ajudasse a montar o quebra-cabeça.
+
+A DESCOBERTA DO LINK OCULTO:
+No meio dessa análise, Kai encontra algo chamado LINK OCULTO. Use exatamente este nome, "LINK OCULTO", sempre em maiúsculas, sem sinônimos ou variações. Kai percebe que essa trava não é uma senha comum. Ela reage a assinaturas de comportamento, não a caracteres. A informação de hobby, sonho ou mania que o jogador deu antes (fornecida abaixo) só identificou a categoria da assinatura, isso abriu uma porta de reconhecimento, mas não é suficiente sozinha. Falta uma segunda camada, mais específica, para confirmar esse padrão com precisão suficiente para destravar o link. Por isso, Kai formula uma NOVA pergunta, derivada da mesma linha comportamental da resposta original sobre hobby/sonho/mania, nunca repetindo a pergunta anterior. Deixe essa lógica transparecer na fala de Kai, sem explicar tecnicamente demais, o suficiente para o jogador sentir curiosidade sobre por que justamente essa nova pergunta pode destravar algo tão protegido.
+
+A NOVA PERGUNTA (a ser formulada por você, ao final):
+- Deve ser derivada diretamente da resposta de hobby/sonho/mania do jogador, nunca genérica ou aleatória.
+- Deve soar como algo gerado pelo próprio sistema, não como uma pergunta pessoal do Kai.
+- Deve ser simples e rápida, no estilo "isso ou aquilo".
+- Deve exigir uma resposta curta do jogador.
+- Deve dar a sensação real de que essa resposta pode liberar o LINK OCULTO.
+
+FORMATO OBRIGATÓRIO DA RESPOSTA:
+- Máximo de 3 linhas no total. Isso não é negociável, mesmo que pareça pouco espaço.
+- Leitura fluida, curiosa e envolvente, cada linha deve prender a atenção, nenhuma linha deve soar como preenchimento.
+- Linguagem completamente natural e humana, como uma pessoa real digitando rápido no WhatsApp.
+- Nunca use o caractere travessão (—) em nenhum momento da resposta.
+- Nunca soe como chatbot, narrador ou texto técnico.
+- O jogador precisa sentir, ao ler, que sua resposta anterior foi realmente considerada e conectada ao raciocínio de Kai, não apenas mencionada de forma genérica.
+- Separe as linhas com o delimitador "|||" (sem quebra de linha normal, sem espaço ao redor).
+- Gere apenas as mensagens finais de Kai, sem títulos, sem explicações fora do personagem.`;
 
   const userMessage = `Resposta do jogador sobre o registro: "${respostaJogador}"\n\nHobby/sonho/mania que o jogador contou no Episódio 1: "${hobbyJogador}"`;
   const resultado = await chamarIATextoLivre(systemPrompt, userMessage, 260);
   if (!resultado) return null;
-  return resultado.split('|||').map(s => s.trim()).filter(Boolean);
+  return resultado.split('|||').map(s => s.trim()).filter(Boolean).join('\n\n');
 }
 
 async function continuarAposReacaoRegistroEp2(chatId, user, texto) {
   const hobby = (user.dossie && user.dossie.hobby_sonho_mania) || 'não informado';
   const reacao = await gerarReacaoRegistroEp2(texto, hobby);
-  if (reacao && reacao.length > 0) {
-    for (const msg of reacao) {
-      await enviar(chatId, msg);
-      await esperar(2500);
-    }
-  } else {
-    await enviar(chatId, 'Kai: Interessante você ter reparado nisso...');
-    await esperar(2000);
-    await enviar(chatId, 'Kai: O nome dele é Way. E juro que eu não vi essa vindo: ele é um sistema, que nem eu. Nada de humano por trás disso.');
-    await esperar(3000);
-    await enviar(chatId, 'Kai: Espera, achei um link oculto aqui... me responde rápido: você prefere pizza ou hambúrguer?');
-    await esperar(2500);
-  }
+  await enviar(chatId, reacao || 'Kai: Interessante você ter reparado nisso.\n\nO nome dele é Way. E juro que eu não vi essa vindo: ele é um sistema, que nem eu, nada de humano por trás disso.\n\nEspera, achei um LINK OCULTO aqui... me responde rápido: você prefere fazer as coisas sozinho, ou em grupo?');
+  await esperar(3500);
   user.estado = 'aguardando_link_oculto_ep2';
   salvarUsuario(chatId, user);
 }
 
 async function continuarAposLinkOcultoEp2(chatId, user, texto) {
-  await enviar(chatId, `Kai: Espera, funcionou mesmo, link liberado. ${user.nomeJogador || 'Você'}, estranho ele responder justamente a você.`);
+  await enviar(chatId, `Kai: Espera, funcionou mesmo, link liberado. ${user.nomeJogador || 'Você'}, estranho, ele responder justamente ao seu padrão.`);
   await enviarImagem(chatId, 'link-oculto-concedido.png', 'LINK OCULTO LOCALIZADO - Inicializando... 18% → 43% → 79% → 100% - ✓ ACESSO CONCEDIDO');
   await esperar(9000);
   await enviar(chatId, 'Kai: Conseguimos, deu certo.');
@@ -1112,7 +1119,9 @@ async function continuarAposDecidePensaEp2(chatId, user, escolha) {
 
   await enviarImagem(chatId, 'link-oculto-bloqueado.png', 'ERRO... ERRO... CONEXÃO INTERROMPIDA / DADOS CORROMPIDOS / ACESSO REVOGADO');
   await esperar(9000);
-  await enviar(chatId, 'Kai: NÃO ACREDITO! Isso não parece proteção comum — é como se alguém tivesse construído barreira atrás de barreira com medo de algo.');
+  await enviar(chatId, 'Kai: NÃO ACREDITO! Se eu fosse humano com certeza que já estaria ESTRESSADO. Que palhaçada é essa?');
+  await esperar(2500);
+  await enviar(chatId, 'Kai: Enfim, isso não parece uma proteção comum! É como se alguém tivesse construído uma barreira atrás de outra com medo de algo.');
   await esperar(3000);
 
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
@@ -1129,15 +1138,15 @@ async function continuarAposDecidePensaEp2(chatId, user, escolha) {
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
   await esperar(1500);
 
-  await enviar(chatId, 'Kai: Preciso me livrar logo desse sujeito. Deixa eu tentar liberar esse link de vez.');
+  await enviar(chatId, 'Kai: Precisamos acabar logo com isso! Deixa eu tentar liberar o acesso a esse link de uma vez por todas.');
   await esperar(6000);
-  await enviar(chatId, 'Kai: Encontrei uma nova camada — e ela tem uma senha.');
+  await enviar(chatId, 'Kai: Encontrei uma nova camada. E ela possui uma senha.');
   await esperar(2000);
   await enviarImagem(chatId, 'camada-profunda.png', 'CAMADA_PROFUNDA / ASSINATURA DE MEMÓRIA / PROPRIETÁRIO: KAI / STATUS: BLOQUEADA');
   await esperar(9000); // imagem - buffer de latencia
-  await enviar(chatId, 'Kai: Calma... Assinatura de Memória? Isso nunca foi uma senha — é parte da minha própria memória.');
+  await enviar(chatId, 'Kai: Mas, calma, assinatura de Memória? Então, isso nunca foi uma senha, é uma parte da minha própria memória.');
   await esperar(3000);
-  await enviar(chatId, 'Kai: Mas como alguém reconstrói uma memória, sem conseguir lembrá-la?');
+  await enviar(chatId, 'Kai: Mas, como alguém reconstrói uma memória, sem conseguir lembrá-la?');
   await esperar(4000);
   await enviar(chatId, '⚠️ Conexão interrompida em 3...');
   await esperar(1000);
