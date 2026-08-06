@@ -827,6 +827,7 @@ async function iniciarEpisodio2(chatId, user) {
   await enviar(chatId, '🛑 SISTEMA_INVADIDO (#2_BECO_START)');
   await enviarAudio(chatId, 'voz-w-2.mp3', 'Áudio W.: "Kai, você quer mesmo seguir em frente! Você ainda não percebeu, por que eu sempre chego antes de você?"');
   await esperar(13000); // audio - buffer de latencia (ajustar quando soubermos a duracao real)
+  await enviar(chatId, '🟢 SISTEMA_RECUPERADO (#2_PILOT)');
   await enviarImagem(chatId, 'sistema-recuperado.png', '[SISTEMA RECUPERADO] Restaurando acesso... Recriando protocolo... Isolando invasão... Conexão restabelecida.');
   await esperar(9000);
   await enviar(chatId, `Kai: EU NÃO AGUENTO MAIS ESSE CARA! Consegui improvisar uma barreira nova contra o W.`);
@@ -880,8 +881,8 @@ async function continuarAposLembrancaEp2(chatId, user, texto) {
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
   await enviarAudio(chatId, 'voz-w-3.mp3', 'Áudio W.: "Humano, quando tudo mudar, você ainda vai estar ao lado dele?"');
   await esperar(13000);
-  await enviar(chatId, 'W: Já que vocês querem seguir, eu tenho um interesse particular nesse documento. Então agora eu assumo.');
-  await esperar(2500);
+  await enviarAudio(chatId, 'w-assume.mp3', 'Áudio W.: "Já que vocês querem seguir, eu tenho um interesse particular nesse documento. Então agora eu assumo."');
+  await esperar(13000); // audio - buffer de latencia (ajustar quando soubermos a duracao real)
 
   await enviarBotoes(chatId, `W: ${user.nomeJogador || 'você'}... você entendeu o desafio ou vou ter que perder tempo explicando de novo?`, [[
     { texto: '✅ Entendi', callback_data: 'op2_entendeu:sim' },
@@ -1046,7 +1047,7 @@ async function finalizarBecoEp2(chatId, user, jogadorVenceu) {
 }
 
 async function gerarReacaoRegistroEp2(respostaJogador, hobbyJogador) {
-  const systemPrompt = `Você é Kai, protagonista de uma série interativa de suspense conduzida via WhatsApp. Você está analisando, em tempo real, um registro do sistema junto com o jogador, tentando entender uma trava chamada LINK OCULTO.
+  const systemPrompt = `Você é Kai, protagonista de uma série interativa de suspense conduzida via WhatsApp. Você está analisando, em tempo real, um registro do sistema junto com o jogador, tentando entender uma trava chamada LINK OCULTO (não altere o nome LINK OCULTO).
 
 CONTEXTO DA CENA:
 Kai perguntou ao jogador: "Se você tivesse que apontar alguma informação desse registro, qual seria?" O jogador respondeu. Você deve responder agora como Kai, dando continuidade natural à investigação.
@@ -1058,24 +1059,25 @@ REGRA CENTRAL DA RESPOSTA:
 Aproveite genuinamente o que o jogador respondeu na pergunta sobre o registro. Nunca diga que ele errou ou que a resposta foi insuficiente. Se ele mencionou mais de uma informação, conecte essas informações entre si de forma natural, como se cada peça ajudasse a montar o quebra-cabeça.
 
 A DESCOBERTA DO LINK OCULTO:
-No meio dessa análise, Kai encontra algo chamado LINK OCULTO. Use exatamente este nome, "LINK OCULTO", sempre em maiúsculas, sem sinônimos ou variações. Kai percebe que essa trava não é uma senha comum. Ela reage a assinaturas de comportamento, não a caracteres. A informação de hobby, sonho ou mania que o jogador deu antes (fornecida abaixo) só identificou a categoria da assinatura, isso abriu uma porta de reconhecimento, mas não é suficiente sozinha. Falta uma segunda camada, mais específica, para confirmar esse padrão com precisão suficiente para destravar o link. Por isso, Kai formula uma NOVA pergunta, derivada da mesma linha comportamental da resposta original sobre hobby/sonho/mania, nunca repetindo a pergunta anterior. Deixe essa lógica transparecer na fala de Kai, sem explicar tecnicamente demais, o suficiente para o jogador sentir curiosidade sobre por que justamente essa nova pergunta pode destravar algo tão protegido.
+No meio dessa análise, Kai encontra algo chamado LINK OCULTO. Use exatamente este nome, "LINK OCULTO", sempre em maiúsculas, sem sinônimos ou variações. Kai percebe que essa trava não é uma senha comum. Ela reage a assinaturas de comportamento, não a caracteres. A informação de hobby, sonho ou mania que o jogador deu antes só identificou a categoria da assinatura, isso abriu uma porta de reconhecimento, mas não é suficiente sozinha. Falta uma segunda camada, mais específica, para confirmar esse padrão com precisão suficiente para destravar o link. Por isso, Kai formula uma NOVA pergunta, derivada da mesma linha comportamental da resposta original, nunca repetindo a pergunta anterior. Deixe essa lógica transparecer na fala de Kai, sem explicar tecnicamente demais, o suficiente para o jogador sentir curiosidade sobre por que justamente essa nova pergunta pode destravar algo tão protegido.
 
 A NOVA PERGUNTA (a ser formulada por você, ao final):
-- Deve ser derivada diretamente da resposta de hobby/sonho/mania do jogador, nunca genérica ou aleatória.
-- Deve soar como algo gerado pelo próprio sistema, não como uma pergunta pessoal do Kai.
-- Deve ser simples e rápida, no estilo "isso ou aquilo".
-- Deve exigir uma resposta curta do jogador.
-- Deve dar a sensação real de que essa resposta pode liberar o LINK OCULTO.
+Deve ser derivada diretamente da resposta anterior do jogador, nunca genérica ou aleatória.
+Deve soar como algo gerado pelo próprio sistema, não como uma pergunta pessoal do Kai.
+Deve ser simples e rápida, no estilo "isso ou aquilo".
+Deve exigir uma resposta curta do jogador.
+Deve dar a sensação real de que essa resposta pode liberar o LINK OCULTO.
 
 FORMATO OBRIGATÓRIO DA RESPOSTA:
-- Máximo de 3 linhas no total. Isso não é negociável, mesmo que pareça pouco espaço.
-- Leitura fluida, curiosa e envolvente, cada linha deve prender a atenção, nenhuma linha deve soar como preenchimento.
-- Linguagem completamente natural e humana, como uma pessoa real digitando rápido no WhatsApp.
-- Nunca use o caractere travessão (—) em nenhum momento da resposta.
-- Nunca soe como chatbot, narrador ou texto técnico.
-- O jogador precisa sentir, ao ler, que sua resposta anterior foi realmente considerada e conectada ao raciocínio de Kai, não apenas mencionada de forma genérica.
-- Separe as linhas com o delimitador "|||" (sem quebra de linha normal, sem espaço ao redor).
-- Gere apenas as mensagens finais de Kai, sem títulos, sem explicações fora do personagem.`;
+Máximo de 3 linhas no total. Isso não é negociável, mesmo que pareça pouco espaço.
+Leitura fluida, curiosa e envolvente, cada linha deve prender a atenção, nenhuma linha deve soar como preenchimento.
+Linguagem completamente natural e humana, como uma pessoa real digitando rápido no WhatsApp.
+Nunca use o caractere travessão (—) em nenhum momento da resposta.
+Nunca soe como chatbot, narrador ou texto técnico.
+O jogador precisa sentir, ao ler, que sua resposta anterior foi realmente considerada e conectada ao raciocínio de Kai, não apenas mencionada de forma genérica.
+
+REQUISITO TÉCNICO ADICIONAL (necessário para o sistema, não faz parte do estilo de Kai):
+Separe as linhas com o delimitador "|||" entre elas (sem quebra de linha normal, sem espaço ao redor). Gere apenas as mensagens finais de Kai, sem títulos, sem explicações fora do personagem.`;
 
   const userMessage = `Resposta do jogador sobre o registro: "${respostaJogador}"\n\nHobby/sonho/mania que o jogador contou no Episódio 1: "${hobbyJogador}"`;
   const resultado = await chamarIATextoLivre(systemPrompt, userMessage, 260);
@@ -1133,8 +1135,8 @@ async function continuarAposDecidePensaEp2(chatId, user, escolha) {
   await esperar(13000);
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
   await esperar(1500);
-  await enviar(chatId, 'Kai: Qual é a sua, Way? Onde você quer chegar com tudo isso?');
-  await esperar(2500);
+  await enviarAudio(chatId, 'kai-fala-way.mp3', 'Áudio Kai: "Qual é a sua, Way? Onde você quer chegar com tudo isso?"');
+  await esperar(13000); // audio - buffer de latencia (ajustar quando soubermos a duracao real)
 
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
   await enviarAudio(chatId, 'voz-w-7.mp3', 'Áudio Way: "Uma hora você descobre!"');
