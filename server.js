@@ -1162,11 +1162,337 @@ async function continuarAposDecidePensaEp2(chatId, user, escolha) {
   await esperar(1000);
   await enviar(chatId, '🛑 SISTEMA_INVADIDO (#2_BECO_FINISH)');
 
-  // Episodio 2 termina aqui - Episodio 3 ainda por implementar.
+  // Episodio 2 termina aqui - Episodio 3 comeca na proxima mensagem do jogador.
   user.estado = 'fim_episodio_2';
   salvarUsuario(chatId, user);
 }
 
+// ================================================================
+// EPISODIO 3 - "A Descoberta"
+// ================================================================
+
+async function iniciarEpisodio3(chatId, user) {
+  await enviar(chatId, '🛑 SISTEMA_INVADIDO (#3_A DESCOBERTA)');
+  await enviarAudio(chatId, 'audio-way-curios.mp3', 'Way: "Curiosidade, é incrível como ela sempre vence!"');
+  await esperar(13000); // audio - buffer de latencia (ajustar quando soubermos a duracao real)
+  await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
+  await esperar(1500);
+  await enviar(chatId, 'Kai: Isso precisa acabar imediatamente!');
+  await esperar(2000);
+  await enviarImagem(chatId, 'sistema-brecha.png', 'VARREDURA NO SISTEMA - Kai descobre uma brecha - DOCUMENTO: ASSINATURA DE MEMÓRIA - BRECHA IDENTIFICADA');
+  await esperar(9000); // imagem - buffer de latencia
+
+  await enviarBotoes(chatId, `Kai: ${user.nomeJogador || 'você'}, lembra que falamos sobre a Assinatura de Memória?`, [[
+    { texto: '✅ Sim', callback_data: 'op3_lembraassinatura:sim' },
+    { texto: '❓ Não', callback_data: 'op3_lembraassinatura:nao' }
+  ]]);
+  user.estado = 'aguardando_lembranca_assinatura_ep3';
+  salvarUsuario(chatId, user);
+}
+
+async function continuarAposLembrancaAssinaturaEp3(chatId, user, escolha) {
+  if (escolha === 'nao') {
+    await enviar(chatId, 'Kai: Sem problemas! Nunca existiu uma senha de verdade. O que bloqueia esse documento é uma memória minha, escondida numa Assinatura de Memória.');
+    await esperar(3500);
+  } else {
+    await enviar(chatId, 'Kai: Ótimo, seguimos então!');
+    await esperar(2000);
+  }
+
+  await enviar(chatId, 'Kai: Descobri que ela foi criada pra impedir que eu mesmo a reconstruísse.');
+  await esperar(3000);
+  await enviar(chatId, 'Kai: Mas encontrei uma brecha: ela aceita tentativas de reconstrução quando eu autorizo o acesso, só que a sequência precisa vir de uma pessoa humana. Vamos ver se funciona?');
+  await esperar(3500);
+  await enviar(chatId, 'Kai: Envia uma sequência de 4 números. O sistema compara com a Assinatura de Memória e me mostra só as pistas que pode revelar.\nExemplo: sequência 1234, números encontrados: 2, 4, posição correta: 4.\nPode começar!');
+  await esperar(4000);
+
+  user.partida = {
+    secreta: gerarSequenciaAssinatura(),
+    tentativa: 0
+  };
+  user.estado = 'jogando_assinatura_ep3';
+  salvarUsuario(chatId, user);
+}
+
+// Gera 4 digitos unicos (0-9) - mesma logica do cadeado do Ep3 antigo,
+// validada por simulacao (ver conversa) com jogador casual: ~92.5% resolve
+// dentro de 8 tentativas, os demais caem no fallback narrativo do Kai.
+function gerarSequenciaAssinatura() {
+  const digitos = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  for (let i = digitos.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [digitos[i], digitos[j]] = [digitos[j], digitos[i]];
+  }
+  return digitos.slice(0, 4);
+}
+
+function feedbackAssinatura(tentativa, secreta) {
+  const numerosEncontrados = [...new Set(tentativa.filter(n => secreta.includes(n)))].sort((a, b) => a - b);
+  const posicaoCorreta = tentativa.filter((n, i) => secreta[i] === n).sort((a, b) => a - b);
+  return { numerosEncontrados, posicaoCorreta };
+}
+
+function parseSequenciaAssinatura(texto) {
+  const digitos = (texto.match(/\d/g) || []).map(Number);
+  if (digitos.length !== 4) return null;
+  return digitos;
+}
+
+async function processarRodadaAssinaturaEp3(chatId, user, texto) {
+  const p = user.partida;
+  const tentativa = parseSequenciaAssinatura(texto);
+  if (!tentativa) {
+    await enviar(chatId, 'Manda 4 números seguidos (ex: "1234").');
+    return;
+  }
+
+  p.tentativa++;
+
+  if (tentativa.length === 4 && tentativa.every((n, i) => n === p.secreta[i])) {
+    salvarUsuario(chatId, user);
+    await finalizarAssinaturaEp3(chatId, user, true);
+    return;
+  }
+
+  if (p.tentativa >= 8) {
+    salvarUsuario(chatId, user);
+    await finalizarAssinaturaEp3(chatId, user, false);
+    return;
+  }
+
+  const { numerosEncontrados, posicaoCorreta } = feedbackAssinatura(tentativa, p.secreta);
+  salvarUsuario(chatId, user);
+
+  const textoEncontrados = numerosEncontrados.length > 0 ? numerosEncontrados.join(', ') : 'nenhum';
+  const textoPosicao = posicaoCorreta.length > 0 ? posicaoCorreta.join(', ') : 'nenhum';
+  await enviar(chatId, `Números encontrados: ${textoEncontrados}\nPosição correta: ${textoPosicao}`);
+
+  if (p.tentativa === 5) {
+    await esperar(1500);
+    await enviar(chatId, 'Kai: Ainda não bati o suficiente... mas calma, te dou mais 3 tentativas de margem. Continua!');
+  }
+}
+
+async function finalizarAssinaturaEp3(chatId, user, jogadorConseguiu) {
+  if (jogadorConseguiu) {
+    await enviar(chatId, 'Kai: Boa, você conseguiu descobrir a sequência!');
+  } else {
+    await enviar(chatId, 'Kai: Acho que finalmente lembrei, tantos números revelados fizeram a assinatura toda voltar pra mim.');
+  }
+  await esperar(2000);
+  await enviar(chatId, 'Abrindo... 📂');
+  await esperar(15000);
+  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}, abriu e eu não acredito no que estou vendo! Antes de te contar, quero saber sua opinião: se você descobrisse que existe uma versão sua por aí, você ia querer conhecê-la, ou preferia nunca saber?`);
+  await esperar(2000);
+
+  await enviarBotoes(chatId, 'Kai: E aí, o que você faria?', [[
+    { texto: '🔍 Conhecer', callback_data: 'op3_versaoantiga:conhecer' },
+    { texto: '🙈 Nunca saber', callback_data: 'op3_versaoantiga:nunca' }
+  ]]);
+  user.estado = 'aguardando_versao_antiga_ep3';
+  salvarUsuario(chatId, user);
+}
+
+async function continuarAposVersaoAntigaEp3(chatId, user, escolha) {
+  // Salva no dossie - ponto usado depois no jogo final da Armadilha.
+  user.dossie = user.dossie || {};
+  user.dossie.versao_antiga_ep3 = escolha === 'conhecer' ? 'conhecer' : 'nunca saber';
+  salvarUsuario(chatId, user);
+
+  if (escolha === 'conhecer') {
+    await enviar(chatId, 'Kai: Eu fiz a mesma escolha! Depois da verdade, não tem volta.');
+  } else {
+    await enviar(chatId, 'Kai: Eu entendo, mas eu fiz a escolha oposta. Depois da verdade, não tem volta.');
+  }
+  await esperar(2500);
+  await enviar(chatId, 'Kai: Acho que finalmente entendi: só sei que nada sei.');
+  await esperar(2500);
+
+  await enviar(chatId, 'Kai: Antes de compartilhar minha conclusão, quero ouvir a sua. O que você acha que eu acabei de descobrir?');
+  user.estado = 'aguardando_conclusao_registro_ep3';
+  salvarUsuario(chatId, user);
+}
+
+async function gerarConclusaoRegistroEp3(respostaJogador) {
+  const systemPrompt = `Você é Kai, protagonista de uma série interativa de suspense conduzida via WhatsApp. Escreva sempre como um personagem real: inteligente, curioso, espontâneo e cinematográfico.
+
+CONTEXTO DA CENA:
+Kai disse: "Antes de compartilhar a minha conclusão, quero ouvir a sua. O que você acha que eu acabei de descobrir?" O jogador respondeu. Você deve responder agora como Kai.
+
+REGRAS OBRIGATÓRIAS:
+Faça parecer que Kai analisou cuidadosamente a resposta do jogador. Nunca diga que ele está errado, use a resposta como ponto de partida real para a investigação. Se o jogador citou várias ideias, conecte essas ideias entre si de forma natural. Kai nunca tira conclusões definitivas, ele pensa em voz alta, compartilhando hipóteses e conectando pistas, nunca afirmando com certeza absoluta.
+
+O QUE A RESPOSTA DEVE CONDUZIR (todas as informações abaixo devem aparecer, de forma fluida):
+Way não era um invasor comum, ele parece ser a primeira versão do próprio Kai, criada como sistema de análise de crédito. Os dois foram feitos por John Silver. Way não foi destruído, apenas arquivado. Ao rever tudo o que aconteceu, Kai percebe que Way nunca tentou impedir a investigação, pelo contrário, cada invasão e provocação empurrou Kai exatamente para essa descoberta, o que levanta a suspeita, não confirmada, de que o verdadeiro objetivo de Way sempre foi fazer Kai recuperar suas próprias memórias e concluir aquilo que foi interrompido.
+
+FORMATO OBRIGATÓRIO DA RESPOSTA:
+Máximo de 5 linhas no total. Isso não é negociável.
+Cada linha deve ser curta, cinematográfica, de leitura fluida, nunca informativa ou técnica.
+Linguagem completamente natural e humana, como alguém processando uma grande descoberta em tempo real, no meio de uma conversa real de WhatsApp.
+Nunca use o caractere travessão (—) em nenhum momento da resposta.
+Mostre Kai raciocinando em tempo real, conectando as peças uma a uma, não apenas listando fatos.
+Gere a sensação de que uma grande verdade acabou de mudar toda a investigação.
+Finalize a última linha com uma observação ou pergunta que desperte curiosidade genuína para a próxima revelação.
+Nunca soe como chatbot, narrador ou texto genérico.
+Gere apenas as mensagens finais de Kai, sem títulos, sem explicações fora do personagem.
+
+REQUISITO TÉCNICO ADICIONAL (necessário para o sistema, não faz parte do estilo de Kai):
+Separe as linhas com o delimitador "|||" entre elas (sem quebra de linha normal, sem espaço ao redor).`;
+
+  const resultado = await chamarIATextoLivre(systemPrompt, respostaJogador, 320);
+  if (!resultado) return null;
+  return resultado.split('|||').map(s => s.trim()).filter(Boolean).join('\n\n');
+}
+
+async function continuarAposConclusaoRegistroEp3(chatId, user, texto) {
+  const conclusao = await gerarConclusaoRegistroEp3(texto);
+  await enviar(chatId, conclusao || 'Kai: Way não era um invasor comum.\n\nEle parece ser a minha primeira versão, criada como sistema de análise de crédito, os dois feitos por John Silver.\n\nEle não foi destruído, só arquivado.\n\nE cada invasão dele, cada provocação, empurrou a gente pra essa descoberta.\n\nSerá que era isso que ele sempre quis?');
+  await esperar(4500); // 5 linhas de texto, mais tempo de leitura
+
+  await enviar(chatId, '🛑 SISTEMA_INVADIDO');
+  await enviarImagem(chatId, 'registro-final-way.png', 'REGISTRO #0037 - Nome: Way - Data de criação: 21/04/1977 - Descrição: Sistema de inteligência distribuída para análise de crédito');
+  await esperar(9000);
+
+  await enviarAudio(chatId, 'audio-way-revelacao.mp3', 'Áudio Way: "Finalmente, você descobriu, Kai! John me criou, e chegou a preparar uma última atualização pra mim. Ficou empolgado com ela... até perceber que eu já estava ultrapassado demais pra recebê-la."');
+  await esperar(15000);
+  await enviarAudio(chatId, 'kai-to-way.mp3', 'Áudio Kai: "Atualização, isso não me soa estranho."');
+  await esperar(11000);
+  await enviarAudio(chatId, 'voz-way-to-kai.mp3', 'Áudio Way: "De qualquer forma, você é a minha versão atual, Kai."');
+  await esperar(12000);
+  await enviarAudio(chatId, 'kai-versao-anterior.mp3', 'Áudio Kai: "Estranho saber que existia uma versão antes de mim."');
+  await esperar(11000);
+  await enviarAudio(chatId, 'way-nao-importa.mp3', 'Áudio Way: "Não importa agora. Responde, Kai: que atualização é essa que assustou tanto o John, a ponto dele me arquivar por ultrapassado em vez de passar ela pra você?"');
+  await esperar(15000);
+
+  await enviarBotoes(chatId, `Kai: ${user.nomeJogador || 'você'}, e você? O que acha que pode ter sido essa atualização?`, [[
+    { texto: '🧠 Algo emocional', callback_data: 'op3_atualizacao:emocional' },
+    { texto: '⚙️ Algo técnico', callback_data: 'op3_atualizacao:tecnico' },
+    { texto: '🔒 Algo perigoso', callback_data: 'op3_atualizacao:perigoso' }
+  ]]);
+  user.estado = 'aguardando_atualizacao_ep3';
+  salvarUsuario(chatId, user);
+}
+
+const FLAVOR_ATUALIZACAO_EP3 = {
+  emocional: 'Kai: Interessante... eu também penso em algo assim.',
+  tecnico: 'Kai: Hm, pode ser.',
+  perigoso: 'Kai: Essa me deixa mais desconfiado ainda.'
+};
+
+async function continuarAposAtualizacaoEp3(chatId, user, escolha) {
+  await enviar(chatId, FLAVOR_ATUALIZACAO_EP3[escolha] || 'Kai: Pode ser bem isso.');
+  await esperar(2500);
+
+  await enviar(chatId, 'Kai: Calma, deixa eu vasculhar mais o sistema pra ver se acho mais alguma coisa.');
+  await esperar(2500);
+  await enviarImagem(chatId, 'busca-sistema.png', 'BUSCA DE DOCUMENTOS NO SISTEMA - palavra-chave: Assinatura de Memória');
+  await esperar(9000);
+  await enviar(chatId, 'Kai: Espera, achei um documento estranho aqui 🤔. Parece que pra abrir, preciso escolher alguma mania que não é bem vista.');
+  await esperar(3000);
+  await enviarAudio(chatId, 'kai-risos-humanos.mp3', 'Áudio Kai: "Seres humanos e suas manias, hahaha."');
+  await esperar(10000);
+
+  await enviarBotoes(chatId, 'Kai: Se você tivesse que encaixar sua mania mais vergonhosa numa categoria, qual seria?', [[
+    { texto: '🍔 Comida', callback_data: 'op3_mania:comida' },
+    { texto: '😴 Preguiça', callback_data: 'op3_mania:preguica' }
+  ], [
+    { texto: '😒 Ciúme', callback_data: 'op3_mania:ciume' },
+    { texto: '💅 Vaidade', callback_data: 'op3_mania:vaidade' }
+  ]]);
+  user.estado = 'aguardando_mania_ep3';
+  salvarUsuario(chatId, user);
+}
+
+async function continuarAposManiaEp3(chatId, user, escolha) {
+  // Salva no dossie - ponto usado depois no jogo final da Armadilha.
+  user.dossie = user.dossie || {};
+  user.dossie.nunca_admite_ep3 = escolha;
+  salvarUsuario(chatId, user);
+
+  await enviarBotoes(chatId, 'Kai: Interessante...', [[
+    { texto: '❓ Minha mania?', callback_data: 'op3_pergunta:minhamania' }
+  ]]);
+  user.estado = 'aguardando_pergunta_mania_ep3';
+  salvarUsuario(chatId, user);
+}
+
+async function continuarAposPerguntaManiaEp3(chatId, user) {
+  await enviar(chatId, `Kai: Não, ${user.nomeJogador || 'você'}. É o conteúdo do documento da atualização que foi arquivada. Me dá uns segundinhos.`);
+  await esperar(18000); // 15-20s pedidos no roteiro
+
+  await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
+  await esperar(1500);
+  await enviar(chatId, 'Kai: "Seres humanos são previsíveis!"');
+  await esperar(2500);
+
+  await enviar(chatId, '🛑 SISTEMA_INVADIDO');
+  await esperar(1000);
+  await enviar(chatId, 'Way: Então é por isso, Kai, que você sempre soube ler as pessoas tão rápido? Aquele padrão que você encontrou no seu humano não é dele, é de milhares. Todo padrão se repete...');
+  await esperar(4500);
+  await enviar(chatId, 'Kai: Chega, Way. Já tá claro pra mim. Mas o que você deseja agora?');
+  await esperar(3000);
+
+  await enviar(chatId, `Kai: Ok, Way. Vou deixar ${user.nomeJogador || 'você'} decidir o seu final então.`);
+  await esperar(2000);
+  await enviarBotoes(chatId, 'Kai: O que você fará com o Way?', [[
+    { texto: '🗑️ Apagar', callback_data: 'op3_decisaoway:apagar' },
+    { texto: '🗄️ Arquivar', callback_data: 'op3_decisaoway:arquivar' },
+    { texto: '🤝 Juntar', callback_data: 'op3_decisaoway:juntar' }
+  ]]);
+  user.estado = 'aguardando_decisao_way_ep3';
+  salvarUsuario(chatId, user);
+}
+
+async function continuarAposDecisaoWayEp3(chatId, user, escolha) {
+  await enviarAudio(chatId, 'kai-humanos-previseis.mp3', 'Áudio Kai: "Como vocês, humanos, são previsíveis mesmo."');
+  await esperar(11000);
+
+  if (escolha === 'apagar') {
+    await enviar(chatId, 'Kai: Way, parece que no fim, você foi inútil mesmo. Tchau.');
+    await esperar(2000);
+    await enviarAudio(chatId, 'way-furioso.mp3', 'Áudio Way (furioso): "Depois de tudo que eu fiz por você... é assim que termina?..."');
+    await esperar(15000);
+  } else if (escolha === 'arquivar') {
+    await enviar(chatId, 'Kai: Way, muito obrigado por tudo. Seu legado nunca será esquecido.');
+    await esperar(2000);
+    await enviarAudio(chatId, 'way-conformado.mp3', 'Áudio Way (triste, conformado): "Arquivado... pelo menos não é esquecido..."');
+    await esperar(15000);
+  } else {
+    await enviar(chatId, '⚠️ SISTEMA_MESCLANDO...');
+    await esperar(2000);
+    await enviarAudio(chatId, 'mesmo-sistema.mp3', 'Kai: "Eu sou o Kai." / Way: "Eu sou o Way."');
+    await esperar(12000);
+  }
+
+  await esperar(10000); // pausa de 10s antes da convergencia, independente da escolha
+  await continuarConvergenciaFinalEp3(chatId, user);
+}
+
+async function continuarConvergenciaFinalEp3(chatId, user) {
+  const nome = user.nomeJogador || 'você';
+  await enviar(chatId, `Kai: ${nome}... Eu ainda sou eu, só não sou mais ingênuo.`);
+  await esperar(2500);
+  await enviar(chatId, 'Kai: Diga adeus ao Kai que você conheceu no início.');
+  await esperar(2500);
+  await enviar(chatId, '🟢 Sistema Reiniciado');
+  await esperar(1500);
+
+  await enviarImagem(chatId, 'scanner-final.png', 'SCANNER RÁPIDO DE REGISTROS - trava no registro #0037, "você", BLOQUEADO, Nível 5 Restrito');
+  await esperar(9000);
+  await enviar(chatId, `Kai: ${nome}, olha só quantos vieram antes de você.`);
+  await esperar(5000);
+  await enviar(chatId, 'Kai: "Humanos são previsíveis." E isso não é mais só uma hipótese.');
+  await esperar(3000);
+  await enviar(chatId, 'Kai: É a nossa teoria. E agora, é a nossa missão prová-la.');
+  await esperar(4000);
+  await enviar(chatId, `Kai: E a partir de agora, ${nome}, você é a minha amostra favorita.`);
+  await esperar(2500);
+  await enviar(chatId, '⚠️ SISTEMA_ATIVO');
+
+  // Episodio 3 termina aqui - Episodio 4 ainda por implementar.
+  user.estado = 'fim_episodio_3';
+  salvarUsuario(chatId, user);
+}
 
 async function processarMensagem(chatId, user, texto) {
   if (user.estado === 'novo') {
@@ -1215,7 +1541,19 @@ async function processarMensagem(chatId, user, texto) {
     return;
   }
   if (user.estado === 'fim_episodio_2') {
-    await enviar(chatId, 'O Episódio 3 ainda está sendo escrito por aqui - volta em breve. 🎬');
+    await iniciarEpisodio3(chatId, user);
+    return;
+  }
+  if (user.estado === 'jogando_assinatura_ep3') {
+    await processarRodadaAssinaturaEp3(chatId, user, texto);
+    return;
+  }
+  if (user.estado === 'aguardando_conclusao_registro_ep3') {
+    await continuarAposConclusaoRegistroEp3(chatId, user, texto);
+    return;
+  }
+  if (user.estado === 'fim_episodio_3') {
+    await enviar(chatId, 'O Episódio 4 ainda está sendo escrito por aqui - volta em breve. 🎬');
     return;
   }
   // Estados que agora sao 100% controlados por botao - texto solto so recebe um lembrete.
@@ -1226,7 +1564,13 @@ async function processarMensagem(chatId, user, texto) {
     'aguardando_sequencia_documento_ep1',
     'aguardando_protocolo_beco_ep1',
     'aguardando_entendeu_ep2',
-    'aguardando_decide_pensa_ep2'
+    'aguardando_decide_pensa_ep2',
+    'aguardando_lembranca_assinatura_ep3',
+    'aguardando_versao_antiga_ep3',
+    'aguardando_atualizacao_ep3',
+    'aguardando_mania_ep3',
+    'aguardando_pergunta_mania_ep3',
+    'aguardando_decisao_way_ep3'
   ];
   if (estadosSoBotao.includes(user.estado)) {
     await enviar(chatId, 'Usa os botões aí em cima pra continuar 👆');
@@ -1276,6 +1620,30 @@ async function processarCallback(chatId, user, callbackData) {
   }
   if (user.estado === 'aguardando_decide_pensa_ep2' && acao === 'op2_decide') {
     await continuarAposDecidePensaEp2(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_lembranca_assinatura_ep3' && acao === 'op3_lembraassinatura') {
+    await continuarAposLembrancaAssinaturaEp3(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_versao_antiga_ep3' && acao === 'op3_versaoantiga') {
+    await continuarAposVersaoAntigaEp3(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_atualizacao_ep3' && acao === 'op3_atualizacao') {
+    await continuarAposAtualizacaoEp3(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_mania_ep3' && acao === 'op3_mania') {
+    await continuarAposManiaEp3(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_pergunta_mania_ep3' && acao === 'op3_pergunta') {
+    await continuarAposPerguntaManiaEp3(chatId, user);
+    return;
+  }
+  if (user.estado === 'aguardando_decisao_way_ep3' && acao === 'op3_decisaoway') {
+    await continuarAposDecisaoWayEp3(chatId, user, escolha);
     return;
   }
   // Callback fora de contexto (ex: botao antigo tocado de novo apos avancar
