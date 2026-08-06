@@ -414,7 +414,7 @@ async function iniciarEpisodio1(chatId, user) {
   await esperar(10000); // imagem - buffer de latencia de entrega
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
   await esperar(1000);
-  await enviar(chatId, 'Kai: W.? Como isso é possível, ele não deveria conseguir entrar aqui!');
+  await enviar(chatId, 'W.? Quem é esse? Como isso é possível, ele não deveria conseguir entrar aqui!');
   await esperar(2000);
   await enviar(chatId, 'Kai: Ei, você que veio para o meu desafio, não vá embora! Vou tentar resolver isso rápido.');
   await esperar(2000);
@@ -448,7 +448,7 @@ async function continuarAposEsperaInicial(chatId, user) {
   await esperar(2000);
   await enviar(chatId, 'Kai: Não vou conseguir resolver isso sozinho... e acho que é maior do que uma simples invasão.');
   await esperar(3000);
-  await enviar(chatId, 'Kai: Então, se vamos encarar isso juntos — como posso te chamar?');
+  await enviar(chatId, 'Kai: Então, se vamos encarar isso juntos, como posso te chamar?');
   user.estado = 'aguardando_nome_ep1';
   salvarUsuario(chatId, user);
 }
@@ -456,7 +456,7 @@ async function continuarAposEsperaInicial(chatId, user) {
 async function continuarAposNome(chatId, user, texto) {
   const nome = (texto || '').trim().slice(0, 40) || 'desafiante';
   user.nomeJogador = nome;
-  await enviar(chatId, `Kai: ${nome}. Prazer, eu sou o KAI — e os meus planos pra hoje definitivamente não eram esses.`);
+  await enviar(chatId, `Kai: ${nome}. Prazer, eu sou o KAI, e os meus planos pra hoje definitivamente não eram esses.`);
   await esperar(2000);
   await enviarBotoes(chatId, 'Kai: Prefere que eu fale do meu jeito... ou daquele jeito formal (engomadinho, cheio de "prezado" e "cordialmente")?', [[
     { texto: '😎 Modo Kai', callback_data: 'op1_tratamento:kai' },
@@ -474,17 +474,20 @@ async function continuarAposTratamento(chatId, user, escolha) {
   user.tratamentoJogador = termo;
 
   if (escolha === 'formal') {
-    await enviar(chatId, 'Kai: Engomadinho? Você superestima minha capacidade de parecer sério 😂 Confesso, era só teste — acabou de desbloquear o modo master do Kai.');
+    await enviarAudio(chatId, 'voz-kai-modo-formal.mp3', 'Áudio Kai: "Engomadinho? Você superestima minha capacidade de parecer sério. Confesso, era só teste, acabou de desbloquear o modo master do Kai."');
   } else {
-    await enviar(chatId, 'Kai: Já gostei de você! 🤝 O modo "Kai" costuma render bastante.');
+    await enviarAudio(chatId, 'voz-kai-modo-kai.mp3', 'Áudio Kai: "Já gostei de você! O modo Kai costuma render bastante."');
   }
-  await esperar(2000);
+  // PENDENCIA: ajustar para duracao real de cada audio + ~3-4s de buffer
+  // assim que soubermos a duracao exata - valor abaixo e' estimativa,
+  // seguindo o mesmo padrao usado nos outros audios do projeto.
+  await esperar(13000);
 
   await enviar(chatId, 'Kai: Agora... tem uma coisa estranha aqui. Um registro?');
   await esperar(2000);
   await enviarImagem(chatId, 'status-bloqueado.png', '🖥️ Registro encontrado. Status: Bloqueado.');
   await esperar(9000); // imagem - buffer de latencia
-  await enviar(chatId, 'Kai: Ele nunca deveria ter aparecido pra mim — e algo me diz que o que tem aí dentro responde mais perguntas do que eu gostaria.');
+  await enviar(chatId, 'Kai: Ele nunca deveria ter aparecido pra mim. E algo me diz que o que tem aí dentro responde mais perguntas do que eu gostaria.');
   await esperar(3800); // um pouco mais de tempo pra pessoa processar, mantendo a pressao
   await enviar(chatId, 'Kai: Pra abrir, tem um desafio. Pensa rápido: qual o primeiro número que surge na sua mente? NÃO RESPONDA!');
   await esperar(2200);
@@ -539,7 +542,7 @@ async function processarRodadaNumeroCallback(chatId, user, escolha) {
   if (p.tentativa === 1 && p.paridadeRevelada === null) {
     p.aguardandoParidade = true;
     salvarUsuario(chatId, user);
-    await enviarBotoes(chatId, 'Antes de continuar — é par ou ímpar?', [[
+    await enviarBotoes(chatId, 'Antes de continuar, é par ou ímpar?', [[
       { texto: '✌️ Par', callback_data: 'op1_paridade:par' },
       { texto: '☝️ Ímpar', callback_data: 'op1_paridade:impar' }
     ]]);
@@ -597,13 +600,13 @@ async function continuarAposReacaoImagem(chatId, user, texto) {
     await esperar(4000); // texto com 3 linhas + espacamento - mais tempo de leitura
   } else {
     // Fallback fixo (max 3 linhas, com espacamento), caso a IA falhe - garante que o episodio nunca trava.
-    await enviar(chatId, 'Kai: Interessante você ter notado isso... mas tem algo bem mais estranho.\n\nEsse registro é de 21/04/1977 — antes de eu sequer existir. A origem aponta pro John, meu criador. Só que tem um segundo nome anotado ali: "W."\n\nQuem diabos é esse W.?');
+    await enviar(chatId, 'Kai: Interessante você ter notado isso... mas tem algo bem mais estranho.\n\nEsse registro é de 21/04/1977, antes de eu sequer existir. A origem aponta pro John, meu criador. Só que tem um segundo nome anotado ali: "W."\n\nQuem diabos é esse W.?');
     await esperar(4000);
   }
 
   await enviar(chatId, 'Kai: Eu preciso de mais respostas! Mas isso vai demorar pra carregar...');
   await esperar(2000);
-  await enviar(chatId, 'Kai: Enquanto isso — me conta algo sobre você. Um hobby, um sonho, uma mania.');
+  await enviar(chatId, 'Kai: Enquanto isso, me conta algo sobre você. Um hobby, um sonho, uma mania.');
   user.estado = 'aguardando_hobby_ep1';
   salvarUsuario(chatId, user);
 }
@@ -627,20 +630,20 @@ async function gerarCitacaoDossie(respostaJogador) {
 sistema, um registro antigo catalogado décadas atrás, que ele não sabia que existia.
 
 Sua função é gerar um FRAGMENTO DE TEXTO que pareça uma citação literal, já escrita, extraída 
-diretamente desse registro — nunca uma fala espontânea ou conversacional do Kai, e nunca uma 
+diretamente desse registro, nunca uma fala espontânea ou conversacional do Kai, e nunca uma 
 análise sendo feita agora. O Kai ENCONTROU essa informação, não a criou.
 
 A resposta do jogador, dada como hobby/sonho/mania, está na mensagem do usuário abaixo.
 
 Sua tarefa acontece em duas etapas internas (não visíveis ao jogador):
 
-ETAPA 1 — Aja como um mentalista científico ao identificar a categoria de personalidade por 
+ETAPA 1: Aja como um mentalista científico ao identificar a categoria de personalidade por 
 trás da resposta do jogador (ex: "escalar" → controle sob pressão, superação, resistência ao 
-caminho fácil). Um mentalista não lista fatos — ele enxerga, numa informação simples, a 
+caminho fácil). Um mentalista não lista fatos, ele enxerga, numa informação simples, a 
 essência psicológica por trás dela. Essa categorização é interna e nunca aparece na saída.
 
-ETAPA 2 — Gere APENAS a citação final, entre aspas, como se fosse um trecho já escrito no 
-documento arquivado — nunca como fala em primeira pessoa do Kai, nunca como raciocínio sendo 
+ETAPA 2: Gere APENAS a citação final, entre aspas, como se fosse um trecho já escrito no 
+documento arquivado, nunca como fala em primeira pessoa do Kai, nunca como raciocínio sendo 
 feito na hora. Formato: uma frase única, direta, sem introduções.
 
 Regras obrigatórias:
@@ -650,7 +653,8 @@ Regras obrigatórias:
 - Nunca use as palavras: padrão, estatística, categoria, dado, sistema, análise.
 - Nunca repita a mesma formulação para respostas iguais de jogadores diferentes.
 - Se a resposta vier mais detalhada, incorpore o detalhe SEM ultrapassar o limite de palavras.
-- Tom: cirúrgico, direto, curto — nunca poético, nunca afetivo, nunca explicativo.
+- Tom: cirúrgico, direto, curto, nunca poético, nunca afetivo, nunca explicativo.
+- Nunca use o caractere travessão (—) em nenhum momento da resposta.
 
 Exemplos de tom e tamanho corretos (não copiar, apenas referência de estilo):
 - Viajar → "Já pensa no próximo destino antes de chegar."
@@ -698,7 +702,7 @@ async function continuarAposHobby(chatId, user, texto) {
 
   await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}... olha isso. Isso é um padrão de comportamento, arquivado no meu sistema, antes de eu existir. E você... você faz parte dele. Como eu vi tanta gente, antes mesmo de existir?`);
   await esperar(4000);
-  await enviar(chatId, 'Kai: Calma, não me abandone. Deixa eu analisar de novo — 5 segundos.');
+  await enviar(chatId, 'Kai: Calma, não me abandone. Deixa eu analisar de novo, 5 segundos.');
   await esperar(5000);
   await enviar(chatId, 'Kai: Voltei. Achei um documento. Pra abrir, pede uma sequência... mas que sequência é essa?');
   await esperar(2000);
@@ -767,7 +771,7 @@ async function continuarAposProtocolo(chatId, user, escolha) {
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
   await esperar(1500);
 
-  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}? Ele voltou de novo — mas dessa vez consegui blindar uma rota alternativa. Essa aqui é firme, não cai como a de antes.`);
+  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}? Ele voltou de novo, mas dessa vez consegui blindar uma rota alternativa. Essa aqui é firme, não cai como a de antes.`);
   await esperar(2500);
   await enviar(chatId, 'Kai: Dá pra fixar de vez. Uma vez só, vale pra season inteira.');
   await esperar(2500);
