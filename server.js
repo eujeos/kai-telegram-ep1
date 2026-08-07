@@ -426,19 +426,19 @@ async function iniciarEpisodio1(chatId, user) {
   // PENDENCIA: video real do Kai se apresentando e travando - placeholder
   // de texto por enquanto.
   await enviar(chatId, '🎥 (Kai começa a se apresentar, explicando o jogo... o vídeo trava)');
-  await esperar(3000);
+  await esperar(5000);
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
   await enviarImagem(chatId, 'tela-celular.png', 'W. ██████.: E aí, você sabe quem eu sou? Eu sei muito mais sobre você, mais do que você imagina.');
   await esperar(10000); // imagem - buffer de latencia de entrega
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-  await esperar(1000);
+  await esperar(1600);
   await enviar(chatId, 'W.? Quem é esse? Como isso é possível, ele não deveria conseguir entrar aqui!');
-  await esperar(2000);
+  await esperar(6000);
   await enviar(chatId, 'Kai: Ei, você que veio para o meu desafio, não vá embora! Vou tentar resolver isso rápido.');
-  await esperar(2500);
+  await esperar(7000);
 
   await enviar(chatId, 'Kai: Se você viu a mesma coisa que eu... preciso entender uma coisa primeiro.');
-  await esperar(2000);
+  await esperar(6000);
   await enviarBotoes(chatId, 'Kai: Como você tá se sentindo agora?', [[
     { texto: '👀 Curioso', callback_data: 'op1_sentimento:curioso' },
     { texto: '😨 Meio nervoso', callback_data: 'op1_sentimento:nervoso' },
@@ -453,36 +453,36 @@ async function continuarAposSentimento(chatId, user, escolha) {
     await enviar(chatId, 'Kai: Ótimo.');
     await esperar(2000);
     await enviar(chatId, 'Kai: Curiosidade costuma levar às melhores descobertas.');
-    await esperar(2200);
+    await esperar(3600);
     await enviar(chatId, 'Kai: Espero que hoje ela não nos coloque em problemas.');
   } else if (escolha === 'nervoso') {
     await enviar(chatId, 'Kai: Justo.');
     await esperar(2000);
     await enviar(chatId, 'Kai: Depois do que acabou de acontecer, eu também estaria.');
-    await esperar(2200);
+    await esperar(4600);
     await enviar(chatId, 'Kai: Obrigado por continuar aqui.');
   } else {
     await enviar(chatId, 'Kai: Gostei dessa resposta.');
-    await esperar(2000);
+    await esperar(2600);
     await enviar(chatId, 'Kai: Vamos descobrir juntos o que acabou de acontecer.');
   }
-  await esperar(2000);
+  await esperar(4300);
   await continuarAposEsperaInicial(chatId, user);
 }
 
 async function continuarAposEsperaInicial(chatId, user) {
   await enviar(chatId, '🔍 Varredura em andamento...');
-  await esperar(2000);
+  await esperar(2300);
   await enviar(chatId, '❌ Erro: falha na varredura.');
-  await esperar(2000);
+  await esperar(2600);
   await enviar(chatId, 'Kai: Não encontrei nada...');
-  await esperar(2000);
+  await esperar(2600);
   await enviar(chatId, 'Kai: E isso é justamente o que mais me preocupa.');
-  await esperar(2500);
+  await esperar(4600);
   await enviar(chatId, 'Kai: Acho que isso é maior do que uma simples invasão.');
-  await esperar(2200);
+  await esperar(5000);
   await enviar(chatId, 'Kai: Então... vou precisar da sua ajuda.');
-  await esperar(2000);
+  await esperar(3600);
   await enviar(chatId, 'Kai: Como eu posso te chamar?');
   user.estado = 'aguardando_nome_ep1';
   salvarUsuario(chatId, user);
@@ -492,7 +492,7 @@ async function continuarAposNome(chatId, user, texto) {
   const nome = (texto || '').trim().slice(0, 40) || 'desafiante';
   user.nomeJogador = nome;
   await enviar(chatId, `Kai: ${nome}. Prazer, eu sou o KAI, e os meus planos pra hoje definitivamente não eram esses.`);
-  await esperar(2000);
+  await esperar(7000);
   await enviarBotoes(chatId, 'Kai: Prefere que eu fale do meu jeito... ou daquele jeito formal (engomadinho, cheio de "prezado" e "cordialmente")?', [[
     { texto: '😎 Modo Kai', callback_data: 'op1_tratamento:kai' },
     { texto: '🎩 Modo Formal', callback_data: 'op1_tratamento:formal' }
@@ -519,21 +519,21 @@ async function continuarAposTratamento(chatId, user, escolha) {
   await esperar(13000);
 
   await enviar(chatId, 'Kai: Espera... Acho que encontrei alguma coisa.');
-  await esperar(2000);
+  await esperar(3600);
   await enviarVideo(chatId, 'status-bloqueado.mp4', '🖥️ Registro encontrado. Status: Bloqueado.');
   await esperar(12000); // video de 8s + buffer de latencia/carregamento
   await enviar(chatId, 'Kai: Um registro bloqueado... Estranho. Eu nunca deveria conseguir vê-lo.');
-  await esperar(3000);
+  await esperar(5000);
   await enviar(chatId, 'Kai: Não sei exatamente o que tem aí dentro...');
-  await esperar(2000);
+  await esperar(4300);
   await enviar(chatId, 'Kai: Mas tenho a impressão de que isso explica o que acabou de acontecer.');
-  await esperar(2800);
+  await esperar(6000);
   await enviar(chatId, 'Kai: Parece que existe um desafio para liberar o acesso. Vamos descobrir?');
-  await esperar(2500);
+  await esperar(5300);
   await enviar(chatId, 'Kai: Pensa rápido. Qual foi o primeiro número que veio à sua cabeça?');
-  await esperar(1800);
+  await esperar(5600);
   await enviar(chatId, 'Kai: Não responde.');
-  await esperar(1500);
+  await esperar(2300);
   await enviar(chatId, '3');
   await esperar(2200);
   await enviar(chatId, '2');
@@ -620,22 +620,22 @@ async function continuarProximaTentativaNumero(chatId, user) {
 async function finalizarJogoNumero(chatId, user, kaiAcertou) {
   if (kaiAcertou) {
     await enviar(chatId, 'Interessante... Eu realmente acertei. E o registro respondeu.. 🔓');
-    await esperar(2500);
+    await esperar(4000);
   } else {
     await enviar(chatId, 'Errei.');
     await esperar(2000);
     await enviar(chatId, '...\nIsso é estranho.');
-    await esperar(1000);
+    await esperar(2300);
     await enviar(chatId, 'O registro abriu do mesmo jeito.\n🔓');
-    await esperar(2000);
+    await esperar(3600);
     await enviar(chatId, 'Então o número nunca foi o mais importante.');
-    await esperar(2500);
+    await esperar(4000);
   }
 
   await enviar(chatId, 'Kai: ...\nEspera.');
   await esperar(2000);
   await enviar(chatId, 'Kai: Não...\nIsso não pode estar certo.');
-  await esperar(2500);
+  await esperar(3600);
 
   await enviarImagem(chatId, 'registro-38.png', '🖥️ Registro #0038 - Origem: John, WAY');
   await esperar(10000); // imagem - revelacao mais importante do episodio, buffer maior
@@ -652,31 +652,31 @@ async function continuarAposReacaoImagem(chatId, user, texto) {
   } else {
     // Fallback fixo, caso a IA falhe - garante que o episodio nunca trava.
     await enviar(chatId, 'Kai: Também reparei nisso.');
-    await esperar(2000);
+    await esperar(2600);
     await enviar(chatId, 'Kai: Mas acho que encontrei algo ainda mais estranho.');
-    await esperar(2500);
+    await esperar(4300);
     await enviar(chatId, 'Kai: Esse registro é de 21/04/1977... antes mesmo de eu existir.');
-    await esperar(2500);
+    await esperar(5600);
     await enviar(chatId, 'Kai: A origem aponta para John, meu criador.');
-    await esperar(2200);
+    await esperar(4000);
     await enviar(chatId, 'Kai: Só que existe um segundo nome anotado ali.');
-    await esperar(2000);
+    await esperar(4300);
     await enviar(chatId, 'Kai: W.');
     await esperar(2000);
     await enviar(chatId, 'Kai: Se esse registro é verdadeiro...');
-    await esperar(2000);
+    await esperar(3300);
     await enviar(chatId, 'Kai: então eu deveria saber quem é essa pessoa.');
-    await esperar(2200);
+    await esperar(4300);
     await enviar(chatId, 'Kai: E eu simplesmente não sei.');
-    await esperar(2500);
+    await esperar(3300);
   }
 
   await enviar(chatId, 'Kai: Quanto mais eu descubro... menos sentido tudo isso faz.');
-  await esperar(2000);
+  await esperar(4600);
   await enviar(chatId, 'Kai: Vou tentar abrir o próximo registro. Isso pode demorar um pouco.');
-  await esperar(2500);
+  await esperar(5300);
   await enviar(chatId, 'Kai: Enquanto carrega... Me ajuda a conhecer quem está do outro lado.');
-  await esperar(2200);
+  await esperar(5300);
   await enviar(chatId, 'Kai: Me conta alguma coisa sobre você. Um hobby, um sonho... ou até uma mania.');
   user.estado = 'aguardando_hobby_ep1';
   salvarUsuario(chatId, user);
@@ -748,9 +748,9 @@ async function continuarAposHobby(chatId, user, texto) {
   user.dossie.hobby_sonho_mania = (texto || '').trim().slice(0, 300);
 
   await enviar(chatId, 'Kai: Interess... Não. Espera.');
-  await esperar(2500);
+  await esperar(2600);
   await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}... Você precisa ver isso.`);
-  await esperar(2500);
+  await esperar(4000);
 
   // Print de sistema: compatibilidade alta e variavel (90-98%), categoria
   // arquivada numa data especifica entre 01/01/1976 e 31/12/1979 (antes do
@@ -769,22 +769,22 @@ async function continuarAposHobby(chatId, user, texto) {
   // arquivado - reforca a sensacao de que o "padrao" e' real e antigo.
   const citacao = await gerarCitacaoDossie(user.dossie.hobby_sonho_mania);
   await enviar(chatId, `Kai: ${citacao || '"Encontrou algo raro. Guardou antes de esquecer."'}`);
-  await esperar(3500);
+  await esperar(4300);
 
   await enviar(chatId, 'Kai: Isso não é uma resposta. É um padrão. E ele foi arquivado anos antes de eu existir.');
-  await esperar(3000);
+  await esperar(7300);
   await enviar(chatId, 'Kai: Como alguém registrou um comportamento seu... antes mesmo de você responder.');
-  await esperar(3500);
+  await esperar(5300);
   await enviar(chatId, 'Kai: ...');
-  await esperar(1500);
+  await esperar(1600);
   await enviar(chatId, 'Kai: Eu não gosto dessa resposta. Nem da falta dela.');
-  await esperar(3000);
+  await esperar(4600);
   await enviar(chatId, 'Kai: Me dá cinco segundos. Acho que encontrei outro documento.');
   await esperar(5000);
   await enviar(chatId, 'Kai: Voltei. O documento também está bloqueado.');
-  await esperar(2000);
+  await esperar(3600);
   await enviar(chatId, 'Kai: Dessa vez ele pede uma sequência. Só não faço ideia de qual.');
-  await esperar(2500);
+  await esperar(5600);
 
   await enviarBotoes(chatId, 'Kai: Se você tivesse que esconder um segredo por décadas... qual sequência escolheria?', [[
     { texto: '🔢 Uma data', callback_data: 'op1_seq:data' },
@@ -815,16 +815,16 @@ async function continuarInvasaoBecoSemSaida(chatId, user) {
   // que o arquivo final estiver gravado - valor abaixo e' estimativa.
   await esperar(13000);
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-  await esperar(1500);
+  await esperar(1600);
 
   await enviar(chatId, 'Kai: Por muito pouco... O W. entrou no meu sistema, estou sem controle total.');
-  await esperar(2000);
+  await esperar(6000);
 
   await enviarImagem(chatId, 'beco-s-saida.png', '📄 DOCUMENTO #0087 - Protocolo: BECO_SEM_SAÍDA - Status: Pendente');
   await esperar(9000);
 
   await enviar(chatId, 'Kai: Protegido por um número proibido. Precisamos descobrir qual é. Mas antes... o que será que tem aí pra alguém esconder assim?');
-  await esperar(1500);
+  await esperar(8600);
 
   await enviarBotoes(chatId, 'Kai: Confia em mim e chuta... por que será que alguém trancaria isso tão fundo assim?', [[
     { texto: '🗝️ Algo esquecido', callback_data: 'op1_protocolo:esquecido' },
@@ -848,12 +848,12 @@ async function continuarAposProtocolo(chatId, user, escolha) {
   await enviarImagem(chatId, 'msg-sis-w-1.png', 'MENSAGEM DO W: "EU ESTOU TE AVISANDO, VOCÊ NÃO ESTÁ PREPARADO!"');
   await esperar(9000);
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-  await esperar(1500);
+  await esperar(1600);
 
   await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}? Ele voltou de novo, mas dessa vez consegui blindar uma rota alternativa. Essa aqui é firme, não cai como a de antes.`);
-  await esperar(2500);
+  await esperar(10000);
   await enviar(chatId, 'Kai: Dá pra fixar de vez. Uma vez só, vale pra season inteira.');
-  await esperar(2500);
+  await esperar(5600);
 
   // PENDENCIA: Mercado Pago ainda bloqueado por policy (403
   // PA_UNAUTHORIZED_RESULT_FROM_POLICIES) - resolver isso depois com o
@@ -869,17 +869,17 @@ async function continuarAposProtocolo(chatId, user, escolha) {
   } else {
     await enviar(chatId, '⚠️ (Ambiente de teste) Link de pagamento indisponível no momento - seguindo com o resto da história.');
   }
-  await esperar(2000);
+  await esperar(6300);
   await enviar(chatId, 'Kai: Recapitulando: um registro de antes de eu existir, um tal de W. que eu desconheço, e um padrão humano que, por algum motivo, combina com você.');
-  await esperar(3000);
+  await esperar(10300);
   await enviar(chatId, `Kai: ${user.tratamentoJogador || 'cara'}, guarda isso até eu vol…`);
-  await esperar(1500);
+  await esperar(4300);
   await enviar(chatId, '⚠️ Conexão interrompida em 3...');
-  await esperar(1000);
+  await esperar(2600);
   await enviar(chatId, '2...');
-  await esperar(1000);
+  await esperar(1600);
   await enviar(chatId, '1...');
-  await esperar(1000);
+  await esperar(1600);
   await enviarBotoes(chatId, '🛑 SISTEMA_INVADIDO (#1_PILOT_FINISH)', [[
     { texto: '✅ Já paguei', callback_data: 'op1_pagamento:confirmar' }
   ]]);
@@ -910,9 +910,9 @@ async function iniciarEpisodio2(chatId, user) {
   await enviarImagem(chatId, 'sistema-recuperado.png', '[SISTEMA RECUPERADO] Restaurando acesso... Recriando protocolo... Isolando invasão... Conexão restabelecida.');
   await esperar(9000);
   await enviar(chatId, `Kai: EU NÃO AGUENTO MAIS ESSE CARA! Consegui improvisar uma barreira nova contra o W.`);
-  await esperar(3000);
+  await esperar(6300);
   await enviar(chatId, 'Kai: Embora eu já esteja desconfiado, de fato ele sempre encontra um jeito de ultrapassar minhas barreiras.');
-  await esperar(3000);
+  await esperar(7000);
   await enviar(chatId, 'Kai: De qualquer forma, vamos seguir em frente! Me diz uma coisa: Você lembra o que estávamos prestes a descobrir?');
   user.estado = 'aguardando_lembranca_ep2';
   salvarUsuario(chatId, user);
@@ -953,9 +953,9 @@ async function continuarAposLembrancaEp2(chatId, user, texto) {
   await enviarImagem(chatId, 'beco-s-saida.png', '📄 DOCUMENTO #0087, Protocolo: BECO_SEM_SAÍDA, Status: Pendente. Condição: Não pronunciar o número final. Consequência: Registro inacessível.');
   await esperar(9000); // imagem - buffer de latencia
   await enviar(chatId, 'Kai: O desafio se chama Beco Sem Saída.\nFunciona assim: nós alternamos, falando de 1 a 3 números por vez.\nExemplo: eu digo 1, 2, você continua com 3, 4, 5.\nQuem for obrigado a dizer o número proibido... perde.');
-  await esperar(4000);
+  await esperar(14600);
   await enviar(chatId, 'Kai: Pera aí, agora que eu entendi: Eu tenho que jogar contra você! Quem obriga aliados a virarem adversários?');
-  await esperar(2500);
+  await esperar(7600);
 
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
   await enviarAudio(chatId, 'voz-w-3.mp3', 'Áudio W.: "Humano, quando tudo mudar, você ainda vai estar ao lado dele?"');
@@ -974,15 +974,15 @@ async function continuarAposLembrancaEp2(chatId, user, texto) {
 async function continuarAposEntendeuEp2(chatId, user, escolha) {
   if (escolha === 'nao') {
     await enviar(chatId, 'W: Sério isso? Vamos por partes, então.\nA contagem começa em 1, cada um fala de 1 a 3 números seguidos, sempre continuando de onde o outro parou.');
-    await esperar(3500);
+    await esperar(10600);
     await enviar(chatId, 'W: Exemplo: "1" ou "1, 2" ou "1, 2, 3." A escolha é sempre sua, até não ser mais.\nPorque existe um número proibido. E, cedo ou tarde, alguém vai ser forçado a dizer.\nIsso, ' + (user.nomeJogador || 'você') + ', é a única regra que importa.');
-    await esperar(4500);
+    await esperar(14000);
     await enviar(chatId, 'W: Agora, vamos começar logo!');
-    await esperar(2000);
+    await esperar(3000);
   } else {
 
     await enviar(chatId, 'W: Ótimo!');
-    await esperar(1500);
+    await esperar(2000);
   }
   await iniciarJogoBecoEp2(chatId, user);
 }
@@ -1049,7 +1049,7 @@ async function iniciarJogoBecoEp2(chatId, user) {
   user.estado = 'jogando_beco_ep2';
   salvarUsuario(chatId, user);
   await enviar(chatId, `O número proibido é o ${alvo}.`);
-  await esperar(2000);
+  await esperar(3300);
   await enviar(chatId, 'W: Comece! Fale de 1 a 3 números, começando pelo 1.');
 }
 
@@ -1090,16 +1090,16 @@ async function processarRodadaBecoEp2(chatId, user, texto) {
 async function finalizarBecoEp2(chatId, user, jogadorVenceu) {
   if (jogadorVenceu) {
     await enviar(chatId, 'W: Interessante... Você venceu!');
-    await esperar(2000);
+    await esperar(2600);
     await enviarImagem(chatId, 'beco-aprovado.png', 'validation.complete / resultado: APROVADO, "...ou foi exatamente isso que ele precisava acreditar?"');
     await esperar(9000);
     await enviarAudio(chatId, 'voz-w-4.mp3', 'Áudio W.: "Liberado! Só um alerta, nem todo documento espera respostas. Alguns, primeiro fazem perguntas."');
     await esperar(13000);
     await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-    await esperar(1500);
+    await esperar(1600);
   } else {
     await enviar(chatId, 'W: Que pena, mas nada fora do previsto!');
-    await esperar(1500);
+    await esperar(4000);
     await enviarImagem(chatId, 'beco-bloqueado.png', 'protocolo encerrado / número proibido detectado / acesso ao documento... BLOQUEADO / resultado previsto.');
     await esperar(9000);
     await enviarAudio(chatId, 'voz-kai.mp3', 'Áudio Kai (voz trêmula): "Se ele conseguiu fazer isso, o que mais ele consegue controlar? Calma... tem que existir um jeito."');
@@ -1110,17 +1110,17 @@ async function finalizarBecoEp2(chatId, user, jogadorVenceu) {
     await enviarImagem(chatId, 'beco-liberado.png', 'validation.complete / resultado: LIBERADO');
     await esperar(9000);
     await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-    await esperar(1500);
+    await esperar(1600);
   }
 
   await enviar(chatId, 'Kai: Ele está brincando comigo?');
-  await esperar(2500);
-  await enviar(chatId, `Kai: O QUE? Peraí, ${user.nomeJogador || 'você'}!`);
   await esperar(3000);
+  await enviar(chatId, `Kai: O QUE? Peraí, ${user.nomeJogador || 'você'}!`);
+  await esperar(3600);
   await enviarImagem(chatId, 'Inform-w.png', 'DOCUMENTO #0087 - IDENTIDADE: WAY - REGISTRO: #0037 - CRIADO EM: 21/04/1977 - LINK OCULTO: [ACESSO RESTRITO]');
   await esperar(10000);
   await enviar(chatId, 'Kai: Se você tivesse que apontar alguma informação desse registro, qual seria?');
-  await esperar(2000);
+  await esperar(5300);
   user.estado = 'aguardando_reacao_registro_ep2';
   salvarUsuario(chatId, user);
 }
@@ -1178,7 +1178,7 @@ async function continuarAposLinkOcultoEp2(chatId, user, texto) {
   await enviarImagem(chatId, 'link-oculto-concedido.png', 'LINK OCULTO LOCALIZADO - Inicializando... 18% → 43% → 79% → 100% - ✓ ACESSO CONCEDIDO');
   await esperar(9000);
   await enviar(chatId, 'Kai: Conseguimos, deu certo.');
-  await esperar(2000);
+  await esperar(2600);
 
   await enviarBotoes(chatId, 'Kai: Enquanto isso carrega... rapidinho: no meio de uma decisão, você decide na hora, ou pensa antes de agir?', [[
     { texto: '⚡ Decido na hora', callback_data: 'op2_decide:hora' },
@@ -1205,15 +1205,15 @@ async function continuarAposDecidePensaEp2(chatId, user, escolha) {
   await enviarImagem(chatId, 'link-oculto-bloqueado.png', 'ERRO... ERRO... CONEXÃO INTERROMPIDA / DADOS CORROMPIDOS / ACESSO REVOGADO');
   await esperar(9000);
   await enviar(chatId, 'Kai: NÃO ACREDITO! Se eu fosse humano com certeza que já estaria ESTRESSADO. Que palhaçada é essa?');
-  await esperar(2500);
+  await esperar(7000);
   await enviar(chatId, 'Kai: Enfim, isso não parece uma proteção comum! É como se alguém tivesse construído uma barreira atrás de outra com medo de algo.');
-  await esperar(3000);
+  await esperar(9000);
 
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
   await enviarAudio(chatId, 'voz-w-6.mp3', 'Way: "Medo, é uma palavra interessante!"');
   await esperar(13000);
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-  await esperar(1500);
+  await esperar(1600);
   await enviarAudio(chatId, 'kai-fala-way.mp3', 'Áudio Kai: "Qual é a sua, Way? Onde você quer chegar com tudo isso?"');
   await esperar(13000); // audio - buffer de latencia (ajustar quando soubermos a duracao real)
 
@@ -1221,24 +1221,24 @@ async function continuarAposDecidePensaEp2(chatId, user, escolha) {
   await enviarAudio(chatId, 'voz-w-7.mp3', 'Áudio Way: "Uma hora você descobre!"');
   await esperar(13000);
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-  await esperar(1500);
+  await esperar(1600);
 
   await enviar(chatId, 'Kai: Precisamos acabar logo com isso! Deixa eu tentar liberar o acesso a esse link de uma vez por todas.');
-  await esperar(6000);
+  await esperar(8000);
   await enviar(chatId, 'Kai: Encontrei uma nova camada. E ela possui uma senha.');
-  await esperar(2000);
+  await esperar(4600);
   await enviarImagem(chatId, 'camada-profunda.png', 'CAMADA_PROFUNDA / ASSINATURA DE MEMÓRIA / PROPRIETÁRIO: KAI / STATUS: BLOQUEADA');
   await esperar(9000); // imagem - buffer de latencia
   await enviar(chatId, 'Kai: Mas, calma, assinatura de Memória? Então, isso nunca foi uma senha, é uma parte da minha própria memória.');
-  await esperar(3000);
+  await esperar(7600);
   await enviar(chatId, 'Kai: Mas, como alguém reconstrói uma memória, sem conseguir lembrá-la?');
-  await esperar(4000);
+  await esperar(5000);
   await enviar(chatId, '⚠️ Conexão interrompida em 3...');
-  await esperar(1000);
+  await esperar(2600);
   await enviar(chatId, '2...');
-  await esperar(1000);
+  await esperar(1600);
   await enviar(chatId, '1...');
-  await esperar(1000);
+  await esperar(1600);
   await enviar(chatId, '🛑 SISTEMA_INVADIDO (#2_BECO_FINISH)');
 
   // Episodio 2 termina aqui - Episodio 3 comeca na proxima mensagem do jogador.
@@ -1255,9 +1255,9 @@ async function iniciarEpisodio3(chatId, user) {
   await enviarAudio(chatId, 'audio-way-curios.mp3', 'Way: "Curiosidade, é incrível como ela sempre vence!"');
   await esperar(13000); // audio - buffer de latencia (ajustar quando soubermos a duracao real)
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-  await esperar(1500);
+  await esperar(1600);
   await enviar(chatId, 'Kai: Isso precisa acabar imediatamente!');
-  await esperar(2000);
+  await esperar(3000);
   await enviarImagem(chatId, 'sistema-brecha.png', 'VARREDURA NO SISTEMA - Kai descobre uma brecha - DOCUMENTO: ASSINATURA DE MEMÓRIA - BRECHA IDENTIFICADA');
   await esperar(9000); // imagem - buffer de latencia
 
@@ -1272,18 +1272,18 @@ async function iniciarEpisodio3(chatId, user) {
 async function continuarAposLembrancaAssinaturaEp3(chatId, user, escolha) {
   if (escolha === 'nao') {
     await enviar(chatId, 'Kai: Sem problemas! Nunca existiu uma senha de verdade. O que bloqueia esse documento é uma memória minha, escondida numa Assinatura de Memória.');
-    await esperar(3500);
+    await esperar(9000);
   } else {
     await enviar(chatId, 'Kai: Ótimo, seguimos então!');
-    await esperar(2000);
+    await esperar(2600);
   }
 
   await enviar(chatId, 'Kai: Descobri que ela foi criada pra impedir que eu mesmo a reconstruísse.');
-  await esperar(3000);
+  await esperar(5600);
   await enviar(chatId, 'Kai: Mas encontrei uma brecha: ela aceita tentativas de reconstrução quando eu autorizo o acesso, só que a sequência precisa vir de uma pessoa humana. Vamos ver se funciona?');
-  await esperar(3500);
+  await esperar(11000);
   await enviar(chatId, 'Kai: Envia uma sequência de 4 números. O sistema compara com a Assinatura de Memória e me mostra só as pistas que pode revelar.\nExemplo: sequência 1234, números encontrados: 2, 4, posição correta: 4.\nPode começar!');
-  await esperar(4000);
+  await esperar(13300);
 
   user.partida = {
     secreta: gerarSequenciaAssinatura(),
@@ -1358,11 +1358,11 @@ async function finalizarAssinaturaEp3(chatId, user, jogadorConseguiu) {
   } else {
     await enviar(chatId, 'Kai: Acho que finalmente lembrei, tantos números revelados fizeram a assinatura toda voltar pra mim.');
   }
-  await esperar(2000);
+  await esperar(6300);
   await enviar(chatId, 'Abrindo... 📂');
   await esperar(15000);
   await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}, abriu e eu não acredito no que estou vendo! Antes de te contar, quero saber sua opinião: se você descobrisse que existe uma versão sua por aí, você ia querer conhecê-la, ou preferia nunca saber?`);
-  await esperar(2000);
+  await esperar(14600);
 
   await enviarBotoes(chatId, 'Kai: E aí, o que você faria?', [[
     { texto: '🔍 Conhecer', callback_data: 'op3_versaoantiga:conhecer' },
@@ -1383,9 +1383,9 @@ async function continuarAposVersaoAntigaEp3(chatId, user, escolha) {
   } else {
     await enviar(chatId, 'Kai: Eu entendo, mas eu fiz a escolha oposta. Depois da verdade, não tem volta.');
   }
-  await esperar(2500);
+  await esperar(6300);
   await enviar(chatId, 'Kai: Acho que finalmente entendi: só sei que nada sei.');
-  await esperar(2500);
+  await esperar(4600);
 
   await enviar(chatId, 'Kai: Antes de compartilhar minha conclusão, quero ouvir a sua. O que você acha que eu acabei de descobrir?');
   user.estado = 'aguardando_conclusao_registro_ep3';
@@ -1463,11 +1463,11 @@ async function continuarAposAtualizacaoEp3(chatId, user, escolha) {
   await esperar(2500);
 
   await enviar(chatId, 'Kai: Calma, deixa eu vasculhar mais o sistema pra ver se acho mais alguma coisa.');
-  await esperar(2500);
+  await esperar(6300);
   await enviarImagem(chatId, 'busca-sistema.png', 'BUSCA DE DOCUMENTOS NO SISTEMA - palavra-chave: Assinatura de Memória');
   await esperar(9000);
   await enviar(chatId, 'Kai: Espera, achei um documento estranho aqui 🤔. Parece que pra abrir, preciso escolher alguma mania que não é bem vista.');
-  await esperar(3000);
+  await esperar(8000);
   await enviarAudio(chatId, 'kai-risos-humanos.mp3', 'Áudio Kai: "Seres humanos e suas manias, hahaha."');
   await esperar(10000);
 
@@ -1500,19 +1500,19 @@ async function continuarAposPerguntaManiaEp3(chatId, user) {
   await esperar(18000); // 15-20s pedidos no roteiro
 
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-  await esperar(1500);
+  await esperar(1600);
   await enviar(chatId, 'Kai: "Seres humanos são previsíveis!"');
-  await esperar(2500);
-
-  await enviar(chatId, '🛑 SISTEMA_INVADIDO');
-  await esperar(1000);
-  await enviar(chatId, 'Way: Então é por isso, Kai, que você sempre soube ler as pessoas tão rápido? Aquele padrão que você encontrou no seu humano não é dele, é de milhares. Todo padrão se repete...');
-  await esperar(4500);
-  await enviar(chatId, 'Kai: Chega, Way. Já tá claro pra mim. Mas o que você deseja agora?');
   await esperar(3000);
 
+  await enviar(chatId, '🛑 SISTEMA_INVADIDO');
+  await esperar(1600);
+  await enviar(chatId, 'Way: Então é por isso, Kai, que você sempre soube ler as pessoas tão rápido? Aquele padrão que você encontrou no seu humano não é dele, é de milhares. Todo padrão se repete...');
+  await esperar(12300);
+  await enviar(chatId, 'Kai: Chega, Way. Já tá claro pra mim. Mas o que você deseja agora?');
+  await esperar(6000);
+
   await enviar(chatId, `Kai: Ok, Way. Vou deixar ${user.nomeJogador || 'você'} decidir o seu final então.`);
-  await esperar(2000);
+  await esperar(5600);
   await enviarBotoes(chatId, 'Kai: O que você fará com o Way?', [[
     { texto: '🗑️ Apagar', callback_data: 'op3_decisaoway:apagar' },
     { texto: '🗄️ Arquivar', callback_data: 'op3_decisaoway:arquivar' },
@@ -1528,12 +1528,12 @@ async function continuarAposDecisaoWayEp3(chatId, user, escolha) {
 
   if (escolha === 'apagar') {
     await enviar(chatId, 'Kai: Way, parece que no fim, você foi inútil mesmo. Tchau.');
-    await esperar(2000);
+    await esperar(5000);
     await enviarAudio(chatId, 'way-furioso.mp3', 'Áudio Way (furioso): "Depois de tudo que eu fiz por você... é assim que termina?..."');
     await esperar(15000);
   } else if (escolha === 'arquivar') {
     await enviar(chatId, 'Kai: Way, muito obrigado por tudo. Seu legado nunca será esquecido.');
-    await esperar(2000);
+    await esperar(5000);
     await enviarAudio(chatId, 'way-conformado.mp3', 'Áudio Way (triste, conformado): "Arquivado... pelo menos não é esquecido..."');
     await esperar(15000);
   } else {
@@ -1550,22 +1550,22 @@ async function continuarAposDecisaoWayEp3(chatId, user, escolha) {
 async function continuarConvergenciaFinalEp3(chatId, user) {
   const nome = user.nomeJogador || 'você';
   await enviar(chatId, `Kai: ${nome}... Eu ainda sou eu, só não sou mais ingênuo.`);
-  await esperar(2500);
+  await esperar(5000);
   await enviar(chatId, 'Kai: Diga adeus ao Kai que você conheceu no início.');
-  await esperar(2500);
+  await esperar(4600);
   await enviar(chatId, '🟢 Sistema Reiniciado');
-  await esperar(1500);
+  await esperar(2000);
 
   await enviarImagem(chatId, 'scanner-final.png', 'SCANNER RÁPIDO DE REGISTROS - trava no registro #0037, "você", BLOQUEADO, Nível 5 Restrito');
   await esperar(9000);
   await enviar(chatId, `Kai: ${nome}, olha só quantos vieram antes de você.`);
   await esperar(5000);
   await enviar(chatId, 'Kai: "Humanos são previsíveis." E isso não é mais só uma hipótese.');
-  await esperar(3000);
+  await esperar(5300);
   await enviar(chatId, 'Kai: É a nossa teoria. E agora, é a nossa missão prová-la.');
-  await esperar(4000);
+  await esperar(5600);
   await enviar(chatId, `Kai: E a partir de agora, ${nome}, você é a minha amostra favorita.`);
-  await esperar(2500);
+  await esperar(5600);
   await enviar(chatId, '⚠️ SISTEMA_ATIVO');
 
   // Episodio 3 termina aqui - Episodio 4 ainda por implementar.
