@@ -637,7 +637,7 @@ async function finalizarJogoNumero(chatId, user, kaiAcertou) {
   await enviar(chatId, 'Kai: Não...\nIsso não pode estar certo.');
   await esperar(2500);
 
-  await enviarImagem(chatId, 'registro-37.png', '🖥️ Registro #0037 - Origem: John, WAY');
+  await enviarImagem(chatId, 'registro-38.png', '🖥️ Registro #0038 - Origem: John, WAY');
   await esperar(10000); // imagem - revelacao mais importante do episodio, buffer maior
   await enviar(chatId, 'Kai: Olhe bem a imagem novamente! Qual foi a primeira coisa estranha que você percebeu?');
   user.estado = 'aguardando_reacao_imagem_ep1';
