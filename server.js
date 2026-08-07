@@ -909,11 +909,15 @@ async function iniciarEpisodio2(chatId, user) {
   await enviar(chatId, '🟢 SISTEMA_RECUPERADO (#2_PILOT)');
   await enviarImagem(chatId, 'sistema-recuperado.png', '[SISTEMA RECUPERADO] Restaurando acesso... Recriando protocolo... Isolando invasão... Conexão restabelecida.');
   await esperar(9000);
-  await enviar(chatId, `Kai: EU NÃO AGUENTO MAIS ESSE CARA! Consegui improvisar uma barreira nova contra o W.`);
-  await esperar(6300);
-  await enviar(chatId, 'Kai: Embora eu já esteja desconfiado, de fato ele sempre encontra um jeito de ultrapassar minhas barreiras.');
-  await esperar(7000);
-  await enviar(chatId, 'Kai: De qualquer forma, vamos seguir em frente! Me diz uma coisa: Você lembra o que estávamos prestes a descobrir?');
+  await enviar(chatId, 'Kai: Eu definitivamente preciso encontrar um jeito de impedir esse cara.');
+  await esperar(4000);
+  await enviar(chatId, 'Kai: Consegui improvisar uma nova barreira. Ela não é perfeita... mas deve nos dar um pouco mais de tempo.');
+  await esperar(6000);
+  await enviar(chatId, 'Kai: O problema é outro. Ele sempre encontra uma forma de atravessar minhas defesas. E isso está começando a me incomodar.');
+  await esperar(6500);
+  await enviar(chatId, 'Kai: Mas chega. Quanto mais tempo eu gasto olhando para ele... mais tempo eu fico sem respostas.');
+  await esperar(5500);
+  await enviar(chatId, 'Kai: Me ajuda a lembrar. Qual era mesmo a próxima coisa que a gente estava prestes a descobrir?');
   user.estado = 'aguardando_lembranca_ep2';
   salvarUsuario(chatId, user);
 }
@@ -947,15 +951,20 @@ FORMATO OBRIGATÓRIO DA RESPOSTA:
 async function continuarAposLembrancaEp2(chatId, user, texto) {
   const reacao = await gerarReacaoLembrancaEp2(texto);
   await enviar(chatId, reacao || 'Kai: É, tem ligação com o que eu tô sentindo aqui.\n\nAchei um documento no meio disso tudo, só que pra abrir vamos ter que passar por um desafio antes.');
-  await esperar(3000);
+  await esperar(3600);
 
-  await esperar(3000);
   await enviarImagem(chatId, 'beco-s-saida.png', '📄 DOCUMENTO #0087, Protocolo: BECO_SEM_SAÍDA, Status: Pendente. Condição: Não pronunciar o número final. Consequência: Registro inacessível.');
   await esperar(9000); // imagem - buffer de latencia
-  await enviar(chatId, 'Kai: O desafio se chama Beco Sem Saída.\nFunciona assim: nós alternamos, falando de 1 a 3 números por vez.\nExemplo: eu digo 1, 2, você continua com 3, 4, 5.\nQuem for obrigado a dizer o número proibido... perde.');
+  await enviar(chatId, 'Kai: Certo... Agora faz sentido.');
+  await esperar(2200);
+  await enviar(chatId, 'Kai: O protocolo se chama Beco Sem Saída. Nós vamos alternar turnos. Cada um pode dizer de 1 a 3 números. Exemplo: Eu digo: 1, 2. Você responde: 3, 4, 5. Quem for obrigado a dizer o número proibido... perde.');
   await esperar(14600);
-  await enviar(chatId, 'Kai: Pera aí, agora que eu entendi: Eu tenho que jogar contra você! Quem obriga aliados a virarem adversários?');
-  await esperar(7600);
+  await enviar(chatId, 'Kai: ...');
+  await esperar(1500);
+  await enviar(chatId, 'Kai: Espera.');
+  await esperar(2000);
+  await enviar(chatId, 'Kai: Então eu vou jogar contra você? Que tipo de protocolo obriga aliados a virarem adversários?');
+  await esperar(6000);
 
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
   await enviarAudio(chatId, 'voz-w-3.mp3', 'Áudio W.: "Humano, quando tudo mudar, você ainda vai estar ao lado dele?"');
@@ -1095,10 +1104,13 @@ async function finalizarBecoEp2(chatId, user, jogadorVenceu) {
     await esperar(9000);
     await enviarAudio(chatId, 'voz-w-4.mp3', 'Áudio W.: "Liberado! Só um alerta, nem todo documento espera respostas. Alguns, primeiro fazem perguntas."');
     await esperar(13000);
-    await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-    await esperar(1600);
+
+    await enviarImagem(chatId, 'Inform-w.png', 'DOCUMENTO #0087 - IDENTIDADE: WAY - REGISTRO: #0037 - CRIADO EM: 21/04/1977 - LINK OCULTO: [ACESSO RESTRITO]');
+    await esperar(10000);
+    await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}, se você tivesse que apontar alguma informação desse registro, qual seria?`);
+    await esperar(5300);
   } else {
-    await enviar(chatId, 'W: Que pena, mas nada fora do previsto!');
+    await enviar(chatId, 'W: Que pena, Mas esse resultado já estava previsto.');
     await esperar(4000);
     await enviarImagem(chatId, 'beco-bloqueado.png', 'protocolo encerrado / número proibido detectado / acesso ao documento... BLOQUEADO / resultado previsto.');
     await esperar(9000);
@@ -1109,18 +1121,17 @@ async function finalizarBecoEp2(chatId, user, jogadorVenceu) {
     await esperar(13000);
     await enviarImagem(chatId, 'beco-liberado.png', 'validation.complete / resultado: LIBERADO');
     await esperar(9000);
-    await enviar(chatId, '🟢 SISTEMA_RECUPERADO');
-    await esperar(1600);
-  }
 
-  await enviar(chatId, 'Kai: Ele está brincando comigo?');
-  await esperar(3000);
-  await enviar(chatId, `Kai: O QUE? Peraí, ${user.nomeJogador || 'você'}!`);
-  await esperar(3600);
-  await enviarImagem(chatId, 'Inform-w.png', 'DOCUMENTO #0087 - IDENTIDADE: WAY - REGISTRO: #0037 - CRIADO EM: 21/04/1977 - LINK OCULTO: [ACESSO RESTRITO]');
-  await esperar(10000);
-  await enviar(chatId, 'Kai: Se você tivesse que apontar alguma informação desse registro, qual seria?');
-  await esperar(5300);
+    await enviar(chatId, 'Kai: Ele mudou o resultado.');
+    await esperar(2500);
+    await enviar(chatId, 'Kai: Não faz sentido. Por que criar um protocolo... se ele pode simplesmente ignorar as próprias regras.');
+    await esperar(6000);
+
+    await enviarImagem(chatId, 'Inform-w.png', 'DOCUMENTO #0087 - IDENTIDADE: WAY - REGISTRO: #0037 - CRIADO EM: 21/04/1977 - LINK OCULTO: [ACESSO RESTRITO]');
+    await esperar(10000);
+    await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}, se você tivesse que apontar alguma informação desse registro, qual seria?`);
+    await esperar(5300);
+  }
   user.estado = 'aguardando_reacao_registro_ep2';
   salvarUsuario(chatId, user);
 }
@@ -1174,13 +1185,19 @@ async function continuarAposReacaoRegistroEp2(chatId, user, texto) {
 }
 
 async function continuarAposLinkOcultoEp2(chatId, user, texto) {
-  await enviar(chatId, `Kai: Espera, funcionou mesmo, link liberado. ${user.nomeJogador || 'Você'}, estranho, ele responder justamente ao seu padrão.`);
-  await enviarImagem(chatId, 'link-oculto-concedido.png', 'LINK OCULTO LOCALIZADO - Inicializando... 18% → 43% → 79% → 100% - ✓ ACESSO CONCEDIDO');
-  await esperar(9000);
-  await enviar(chatId, 'Kai: Conseguimos, deu certo.');
-  await esperar(2600);
+  await enviar(chatId, 'Kai: Funcionou. Não foi um simples chute. O sistema respondeu ao seu padrão... de novo. Interessante...');
+  await enviarVideo(chatId, 'link-oculto-concedido.mp4', 'LINK OCULTO LOCALIZADO - Inicializando... 18% → 43% → 79% → 100% - ✓ ACESSO CONCEDIDO');
+  await esperar(12000); // video de 8s + buffer de latencia/carregamento
+  await enviar(chatId, 'Kai: Aí está..., Engraçado... No começo eu só queria impedir o W.... Agora eu quero entender o que ele está tentando esconder..');
+  await esperar(7500);
+  await enviar(chatId, 'Kai: E, por algum motivo... isso já não parece uma coincidência.');
+  await esperar(4000);
+  await enviar(chatId, 'Kai: Quanto mais esse sistema tenta esconder alguma coisa... mais vontade eu tenho de descobrir.');
+  await esperar(5500);
+  await enviar(chatId, 'Kai: Enquanto o próximo arquivo abre... Deixo eu testar uma coisa.');
+  await esperar(4000);
 
-  await enviarBotoes(chatId, 'Kai: Enquanto isso carrega... rapidinho: no meio de uma decisão, você decide na hora, ou pensa antes de agir?', [[
+  await enviarBotoes(chatId, 'Kai: Quando você precisa tomar uma decisão importante... você age primeiro... ou pensa antes?', [[
     { texto: '⚡ Decido na hora', callback_data: 'op2_decide:hora' },
     { texto: '🧠 Penso antes', callback_data: 'op2_decide:pensa' }
   ]]);
@@ -1189,8 +1206,8 @@ async function continuarAposLinkOcultoEp2(chatId, user, texto) {
 }
 
 const FLAVOR_DECIDE_PENSA = {
-  hora: 'Kai: Gosto disso. Menos tempo pra hesitar, menos tempo pro W. aparecer.',
-  pensa: 'Kai: Sensato. Nem sempre dá tempo, mas hoje... talvez dê.'
+  hora: 'Kai: Impulsivo. Ou corajoso. Às vezes é difícil separar uma coisa da outra. Curioso... Acho que eu faria o mesmo.',
+  pensa: 'Você gosta de entender o terreno antes de dar o próximo passo. Eu achava que isso era apenas cautela. Agora... acho que é uma vantagem.'
 };
 
 async function continuarAposDecidePensaEp2(chatId, user, escolha) {
