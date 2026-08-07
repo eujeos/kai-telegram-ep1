@@ -175,6 +175,24 @@ async function enviarAudio(chatId, nomeArquivo, textoAlternativo) {
   }
 }
 
+async function enviarVideo(chatId, nomeArquivo, textoAlternativo) {
+  const urlPublica = `${BASE_URL}/midia/${nomeArquivo}?v=${MIDIA_CACHE_BUSTER}`;
+  try {
+    const resposta = await fetch(`${TELEGRAM_API_BASE}/sendVideo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, video: urlPublica })
+    });
+    if (!resposta.ok) {
+      console.error('Erro ao enviar video:', resposta.status, await resposta.text());
+      await enviar(chatId, textoAlternativo);
+    }
+  } catch (err) {
+    console.error('Erro de rede ao enviar video:', err.message || err);
+    await enviar(chatId, textoAlternativo);
+  }
+}
+
 // Envia mensagem com botoes inline (teclado). `botoes` e' uma matriz de
 // linhas, cada linha uma lista de { texto, callback_data }.
 async function enviarBotoes(chatId, texto, botoes) {
@@ -417,9 +435,11 @@ async function iniciarEpisodio1(chatId, user) {
   await enviar(chatId, 'W.? Quem é esse? Como isso é possível, ele não deveria conseguir entrar aqui!');
   await esperar(2000);
   await enviar(chatId, 'Kai: Ei, você que veio para o meu desafio, não vá embora! Vou tentar resolver isso rápido.');
-  await esperar(2000);
+  await esperar(2500);
 
-  await enviarBotoes(chatId, 'Kai: Só confirma uma coisa antes... como você tá se sentindo agora?', [[
+  await enviar(chatId, 'Kai: Se você viu a mesma coisa que eu... preciso entender uma coisa primeiro.');
+  await esperar(2000);
+  await enviarBotoes(chatId, 'Kai: Como você tá se sentindo agora?', [[
     { texto: '👀 Curioso', callback_data: 'op1_sentimento:curioso' },
     { texto: '😨 Meio nervoso', callback_data: 'op1_sentimento:nervoso' },
     { texto: '🍿 Bora ver isso', callback_data: 'op1_sentimento:bora' }
@@ -428,15 +448,24 @@ async function iniciarEpisodio1(chatId, user) {
   salvarUsuario(chatId, user);
 }
 
-// Enquete de abertura - flavor puro, nao influencia o resto do jogo.
-const FLAVOR_SENTIMENTO = {
-  curioso: 'Kai: Gostei dessa energia. Vem comigo.',
-  nervoso: 'Kai: Relaxa, eu também tô meio surtado aqui, mas vamos juntos.',
-  bora: 'Kai: Isso aí! Essa é a atitude que eu precisava.'
-};
-
 async function continuarAposSentimento(chatId, user, escolha) {
-  await enviar(chatId, FLAVOR_SENTIMENTO[escolha] || 'Kai: Bora nessa.');
+  if (escolha === 'curioso') {
+    await enviar(chatId, 'Kai: Ótimo.');
+    await esperar(2000);
+    await enviar(chatId, 'Kai: Curiosidade costuma levar às melhores descobertas.');
+    await esperar(2200);
+    await enviar(chatId, 'Kai: Espero que hoje ela não nos coloque em problemas.');
+  } else if (escolha === 'nervoso') {
+    await enviar(chatId, 'Kai: Justo.');
+    await esperar(2000);
+    await enviar(chatId, 'Kai: Depois do que acabou de acontecer, eu também estaria.');
+    await esperar(2200);
+    await enviar(chatId, 'Kai: Obrigado por continuar aqui.');
+  } else {
+    await enviar(chatId, 'Kai: Gostei dessa resposta.');
+    await esperar(2000);
+    await enviar(chatId, 'Kai: Vamos descobrir juntos o que acabou de acontecer.');
+  }
   await esperar(2000);
   await continuarAposEsperaInicial(chatId, user);
 }
@@ -446,9 +475,15 @@ async function continuarAposEsperaInicial(chatId, user) {
   await esperar(2000);
   await enviar(chatId, '❌ Erro: falha na varredura.');
   await esperar(2000);
-  await enviar(chatId, 'Kai: Não vou conseguir resolver isso sozinho... e acho que é maior do que uma simples invasão.');
-  await esperar(3000);
-  await enviar(chatId, 'Kai: Então, se vamos encarar isso juntos, como posso te chamar?');
+  await enviar(chatId, 'Kai: Não encontrei nada...');
+  await esperar(2000);
+  await enviar(chatId, 'Kai: E isso é justamente o que mais me preocupa.');
+  await esperar(2500);
+  await enviar(chatId, 'Kai: Acho que isso é maior do que uma simples invasão.');
+  await esperar(2200);
+  await enviar(chatId, 'Kai: Então... vou precisar da sua ajuda.');
+  await esperar(2000);
+  await enviar(chatId, 'Kai: Como eu posso te chamar?');
   user.estado = 'aguardando_nome_ep1';
   salvarUsuario(chatId, user);
 }
@@ -483,14 +518,22 @@ async function continuarAposTratamento(chatId, user, escolha) {
   // seguindo o mesmo padrao usado nos outros audios do projeto.
   await esperar(13000);
 
-  await enviar(chatId, 'Kai: Agora... tem uma coisa estranha aqui. Um registro?');
+  await enviar(chatId, 'Kai: Espera... Acho que encontrei alguma coisa.');
   await esperar(2000);
-  await enviarImagem(chatId, 'status-bloqueado.png', '🖥️ Registro encontrado. Status: Bloqueado.');
-  await esperar(9000); // imagem - buffer de latencia
-  await enviar(chatId, 'Kai: Ele nunca deveria ter aparecido pra mim. E algo me diz que o que tem aí dentro responde mais perguntas do que eu gostaria.');
-  await esperar(3800); // um pouco mais de tempo pra pessoa processar, mantendo a pressao
-  await enviar(chatId, 'Kai: Pra abrir, tem um desafio. Pensa rápido: qual o primeiro número que surge na sua mente? NÃO RESPONDA!');
-  await esperar(2200);
+  await enviarVideo(chatId, 'status-bloqueado.mp4', '🖥️ Registro encontrado. Status: Bloqueado.');
+  await esperar(12000); // video de 8s + buffer de latencia/carregamento
+  await enviar(chatId, 'Kai: Um registro bloqueado... Estranho. Eu nunca deveria conseguir vê-lo.');
+  await esperar(3000);
+  await enviar(chatId, 'Kai: Não sei exatamente o que tem aí dentro...');
+  await esperar(2000);
+  await enviar(chatId, 'Kai: Mas tenho a impressão de que isso explica o que acabou de acontecer.');
+  await esperar(2800);
+  await enviar(chatId, 'Kai: Parece que existe um desafio para liberar o acesso. Vamos descobrir?');
+  await esperar(2500);
+  await enviar(chatId, 'Kai: Pensa rápido. Qual foi o primeiro número que veio à sua cabeça?');
+  await esperar(1800);
+  await enviar(chatId, 'Kai: Não responde.');
+  await esperar(1500);
   await enviar(chatId, '3');
   await esperar(2200);
   await enviar(chatId, '2');
@@ -511,7 +554,7 @@ async function continuarAposTratamento(chatId, user, escolha) {
   user.estado = 'jogando_numero_ep1';
   salvarUsuario(chatId, user);
 
-  await enviarBotoes(chatId, `Tentativa 1: é o número ${chute}.`, [[
+  await enviarBotoes(chatId, `Kai: Minha primeira tentativa é...\n${chute}`, [[
     { texto: '🎯 Acertou', callback_data: 'op1_numero:acertou' },
     { texto: '❌ Errou', callback_data: 'op1_numero:errou' }
   ]]);
@@ -576,18 +619,26 @@ async function continuarProximaTentativaNumero(chatId, user) {
 
 async function finalizarJogoNumero(chatId, user, kaiAcertou) {
   if (kaiAcertou) {
-    await enviar(chatId, 'Kai: Às vezes até eu me surpreendo comigo mesmo! Olha isso... O registro abriu 🔓');
+    await enviar(chatId, 'Interessante... Eu realmente acertei. E o registro respondeu.. 🔓');
+    await esperar(2500);
   } else {
-    await enviar(chatId, 'Kai: Errei 😅');
-    await esperar(1500);
-    await enviar(chatId, 'Ou nem tanto assim, o último número que eu falei acabou de desbloquear o registro 🔓');
+    await enviar(chatId, 'Errei.');
+    await esperar(2000);
+    await enviar(chatId, '...\nIsso é estranho.');
+    await esperar(1000);
+    await enviar(chatId, 'O registro abriu do mesmo jeito.\n🔓');
+    await esperar(2000);
+    await enviar(chatId, 'Então o número nunca foi o mais importante.');
+    await esperar(2500);
   }
+
+  await enviar(chatId, 'Kai: ...\nEspera.');
+  await esperar(2000);
+  await enviar(chatId, 'Kai: Não...\nIsso não pode estar certo.');
   await esperar(2500);
 
   await enviarImagem(chatId, 'registro-37.png', '🖥️ Registro #0037 - Origem: John, WAY');
   await esperar(10000); // imagem - revelacao mais importante do episodio, buffer maior
-  await enviar(chatId, 'Kai: Pera... isso só pode ser zoação com a minha cara, não é possível.');
-  await esperar(2500);
   await enviar(chatId, 'Kai: Olhe bem a imagem novamente! Qual foi a primeira coisa estranha que você percebeu?');
   user.estado = 'aguardando_reacao_imagem_ep1';
   salvarUsuario(chatId, user);
@@ -599,14 +650,34 @@ async function continuarAposReacaoImagem(chatId, user, texto) {
     await enviar(chatId, reacao);
     await esperar(4000); // texto com 3 linhas + espacamento - mais tempo de leitura
   } else {
-    // Fallback fixo (max 3 linhas, com espacamento), caso a IA falhe - garante que o episodio nunca trava.
-    await enviar(chatId, 'Kai: Interessante você ter notado isso... mas tem algo bem mais estranho.\n\nEsse registro é de 21/04/1977, antes de eu sequer existir. A origem aponta pro John, meu criador. Só que tem um segundo nome anotado ali: "W."\n\nQuem diabos é esse W.?');
-    await esperar(4000);
+    // Fallback fixo, caso a IA falhe - garante que o episodio nunca trava.
+    await enviar(chatId, 'Kai: Também reparei nisso.');
+    await esperar(2000);
+    await enviar(chatId, 'Kai: Mas acho que encontrei algo ainda mais estranho.');
+    await esperar(2500);
+    await enviar(chatId, 'Kai: Esse registro é de 21/04/1977... antes mesmo de eu existir.');
+    await esperar(2500);
+    await enviar(chatId, 'Kai: A origem aponta para John, meu criador.');
+    await esperar(2200);
+    await enviar(chatId, 'Kai: Só que existe um segundo nome anotado ali.');
+    await esperar(2000);
+    await enviar(chatId, 'Kai: W.');
+    await esperar(2000);
+    await enviar(chatId, 'Kai: Se esse registro é verdadeiro...');
+    await esperar(2000);
+    await enviar(chatId, 'Kai: então eu deveria saber quem é essa pessoa.');
+    await esperar(2200);
+    await enviar(chatId, 'Kai: E eu simplesmente não sei.');
+    await esperar(2500);
   }
 
-  await enviar(chatId, 'Kai: Eu preciso de mais respostas! Mas isso vai demorar pra carregar...');
+  await enviar(chatId, 'Kai: Quanto mais eu descubro... menos sentido tudo isso faz.');
   await esperar(2000);
-  await enviar(chatId, 'Kai: Enquanto isso, me conta algo sobre você. Um hobby, um sonho, uma mania.');
+  await enviar(chatId, 'Kai: Vou tentar abrir o próximo registro. Isso pode demorar um pouco.');
+  await esperar(2500);
+  await enviar(chatId, 'Kai: Enquanto carrega... Me ajuda a conhecer quem está do outro lado.');
+  await esperar(2200);
+  await enviar(chatId, 'Kai: Me conta alguma coisa sobre você. Um hobby, um sonho... ou até uma mania.');
   user.estado = 'aguardando_hobby_ep1';
   salvarUsuario(chatId, user);
 }
@@ -676,10 +747,10 @@ async function continuarAposHobby(chatId, user, texto) {
   user.dossie = user.dossie || {};
   user.dossie.hobby_sonho_mania = (texto || '').trim().slice(0, 300);
 
-  await enviar(chatId, 'Kai: Interess... isso não é possível!');
+  await enviar(chatId, 'Kai: Interess... Não. Espera.');
   await esperar(2500);
-  await enviar(chatId, `${user.nomeJogador || 'Você'}...`);
-  await esperar(2000);
+  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}... Você precisa ver isso.`);
+  await esperar(2500);
 
   // Print de sistema: compatibilidade alta e variavel (90-98%), categoria
   // arquivada numa data especifica entre 01/01/1976 e 31/12/1979 (antes do
@@ -697,17 +768,25 @@ async function continuarAposHobby(chatId, user, texto) {
   // Citacao gerada por IA, como se fosse extraida literalmente do registro
   // arquivado - reforca a sensacao de que o "padrao" e' real e antigo.
   const citacao = await gerarCitacaoDossie(user.dossie.hobby_sonho_mania);
-  await enviar(chatId, citacao || '"Encontrou algo raro. Guardou antes de esquecer."');
+  await enviar(chatId, `Kai: ${citacao || '"Encontrou algo raro. Guardou antes de esquecer."'}`);
   await esperar(3500);
 
-  await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}... olha isso. Isso é um padrão de comportamento, arquivado no meu sistema, antes de eu existir. E você... você faz parte dele. Como eu vi tanta gente, antes mesmo de existir?`);
-  await esperar(4000);
-  await enviar(chatId, 'Kai: Calma, não me abandone. Deixa eu analisar de novo, 5 segundos.');
+  await enviar(chatId, 'Kai: Isso não é uma resposta. É um padrão. E ele foi arquivado anos antes de eu existir.');
+  await esperar(3000);
+  await enviar(chatId, 'Kai: Como alguém registrou um comportamento seu... antes mesmo de você responder.');
+  await esperar(3500);
+  await enviar(chatId, 'Kai: ...');
+  await esperar(1500);
+  await enviar(chatId, 'Kai: Eu não gosto dessa resposta. Nem da falta dela.');
+  await esperar(3000);
+  await enviar(chatId, 'Kai: Me dá cinco segundos. Acho que encontrei outro documento.');
   await esperar(5000);
-  await enviar(chatId, 'Kai: Voltei. Achei um documento. Pra abrir, pede uma sequência... mas que sequência é essa?');
+  await enviar(chatId, 'Kai: Voltei. O documento também está bloqueado.');
   await esperar(2000);
+  await enviar(chatId, 'Kai: Dessa vez ele pede uma sequência. Só não faço ideia de qual.');
+  await esperar(2500);
 
-  await enviarBotoes(chatId, 'Kai: Se você fosse chutar de olhos fechados... que tipo de sequência guardaria um segredo desses?', [[
+  await enviarBotoes(chatId, 'Kai: Se você tivesse que esconder um segredo por décadas... qual sequência escolheria?', [[
     { texto: '🔢 Uma data', callback_data: 'op1_seq:data' },
     { texto: '🔑 Senha antiga', callback_data: 'op1_seq:senha' },
     { texto: '🧬 Código genético', callback_data: 'op1_seq:genetico' }
@@ -718,9 +797,9 @@ async function continuarAposHobby(chatId, user, texto) {
 
 // Enquete sobre a sequencia do documento - flavor, sem efeito no jogo.
 const FLAVOR_SEQUENCIA = {
-  data: 'Kai: Data... pode ser. Todo mistério bom começa com uma data, né?',
-  senha: "Kai: Senha antiga eu até aceito. Só espero que não seja '123456'.",
-  genetico: 'Kai: Ousado. Se for isso, aí sim eu tô mesmo encrencado.'
+  data: 'Kai: Uma data... faz sentido. Lugares gostam de guardar memórias assim.',
+  senha: 'Kai: Uma senha antiga... eu também tentaria por aí.',
+  genetico: 'Kai: Essa foi ousada... e, por algum motivo, eu espero que você esteja errado.'
 };
 
 async function continuarAposSequencia(chatId, user, escolha) {
@@ -791,7 +870,7 @@ async function continuarAposProtocolo(chatId, user, escolha) {
     await enviar(chatId, '⚠️ (Ambiente de teste) Link de pagamento indisponível no momento - seguindo com o resto da história.');
   }
   await esperar(2000);
-  await enviar(chatId, 'Kai: Recapitulando: um registro de antes de eu existir, um tal de W. que eu desconheço, e o sistema já sabia de você antes de mim.');
+  await enviar(chatId, 'Kai: Recapitulando: um registro de antes de eu existir, um tal de W. que eu desconheço, e um padrão humano que, por algum motivo, combina com você.');
   await esperar(3000);
   await enviar(chatId, `Kai: ${user.tratamentoJogador || 'cara'}, guarda isso até eu vol…`);
   await esperar(1500);
