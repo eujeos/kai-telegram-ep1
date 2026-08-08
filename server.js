@@ -163,10 +163,15 @@ async function enviarImagem(chatId, nomeArquivo, textoAlternativo) {
 async function enviarAudio(chatId, nomeArquivo, textoAlternativo) {
   const urlPublica = `${BASE_URL}/midia/${nomeArquivo}?v=${gerarCacheBuster()}`;
   try {
-    const resposta = await fetch(`${TELEGRAM_API_BASE}/sendVoice`, {
+    // Usamos sendAudio (arquivo de audio normal) em vez de sendVoice
+    // (mensagem de voz) de proposito: o Telegram tem reproducao continua
+    // automatica entre mensagens de voz (sendVoice) - quando uma termina,
+    // o app toca a proxima sozinho. Isso fazia parecer que "o audio
+    // anterior tocava de novo". sendAudio nao tem esse comportamento.
+    const resposta = await fetch(`${TELEGRAM_API_BASE}/sendAudio`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, voice: urlPublica })
+      body: JSON.stringify({ chat_id: chatId, audio: urlPublica })
     });
     if (!resposta.ok) {
       console.error('Erro ao enviar audio:', resposta.status, await resposta.text());
@@ -347,9 +352,9 @@ O seu objetivo é fazer parecer que Kai realmente analisou a resposta do jogador
 
 FATO OBRIGATÓRIO Nº1 (tem que aparecer sempre, é o mais importante de todos): Kai afirma explicitamente que esse registro é DELE MESMO - é o próprio registro de criação do Kai. Isso precisa ficar claro na resposta, não pode ser omitido mesmo com pouco espaço.
 
-Outros fatos, use quantos couberem sem estourar o limite de linhas (nessa ordem de prioridade):
-- O registro foi criado em 21/04/1977 (data exata).
-- Isso é estranho porque Kai só foi criado no fim dos anos 80 - o registro é anterior à sua própria existência.
+FATO OBRIGATÓRIO Nº2 (também tem que aparecer sempre): Kai só foi criado/desenvolvido no fim dos anos 80 - e esse registro é de 21/04/1977, ou seja, é anterior à própria existência do Kai. Essa contradição de datas tem que ficar clara na resposta.
+
+Outros fatos, use se ainda couber espaço sem estourar o limite de linhas (prioridade menor que os dois obrigatórios acima):
 - A origem aponta pro John, o único criador que Kai sempre acreditou ter.
 - Tem um segundo nome anotado ali, abreviado só como "W." - um segundo criador que Kai nunca soube que existia.
 
@@ -1409,10 +1414,8 @@ async function finalizarAssinaturaEp3(chatId, user, jogadorConseguiu) {
   await esperar(900);
   await enviar(chatId, `Kai: ${user.nomeJogador || 'você'}, Isso é muito mais estranho do que eu esperava.`);
   await esperar(3891);
-  await enviar(chatId, 'Kai: Antes de mostrar, se existisse uma versão sua por aí, você ia querer conhecê-la? Ou preferiria nunca saber?');
-  await esperar(5717);
 
-  await enviarBotoes(chatId, 'Kai: E aí, o que você faria?', [[
+  await enviarBotoes(chatId, 'Kai: Antes de mostrar, se existisse uma versão sua por aí, você ia querer conhecê-la? Ou preferiria nunca saber?', [[
     { texto: '🔍 Conhecer', callback_data: 'op3_versaoantiga:conhecer' },
     { texto: '🙈 Nunca saber', callback_data: 'op3_versaoantiga:nunca' }
   ]]);
@@ -1474,7 +1477,7 @@ Separe as linhas com o delimitador "|||" entre elas (sem quebra de linha normal,
 async function continuarAposConclusaoRegistroEp3(chatId, user, texto) {
   const conclusao = await gerarConclusaoRegistroEp3(texto);
   await enviar(chatId, conclusao || 'Kai: Way não era um invasor comum.\n\nEle parece ser a minha primeira versão, criada como sistema de análise de crédito, os dois feitos por John Silver.\n\nEle não foi destruído, só arquivado.\n\nE cada invasão dele, cada provocação, empurrou a gente pra essa descoberta.\n\nSerá que era isso que ele sempre quis?');
-  await esperar(4500); // 5 linhas de texto, mais tempo de leitura
+  await esperar(9500); // resposta grande (ate 5 linhas) - bem mais tempo de leitura
 
   await enviar(chatId, '🛑 SISTEMA_INVADIDO');
   await enviarImagem(chatId, 'registro-final-way.png', 'REGISTRO #0037 - Nome: Way - Data de criação: 21/04/1977 - Descrição: Sistema de inteligência distribuída para análise de crédito');
