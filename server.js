@@ -1726,6 +1726,549 @@ async function continuarConvergenciaFusaoEp3(chatId, user) {
   salvarUsuario(chatId, user);
 }
 
+// ================================================================
+// EPISODIO 4 - "A Teoria"
+// ================================================================
+
+async function iniciarEpisodio4(chatId, user) {
+  const nome = user.nomeJogador || 'você';
+  await enviar(chatId, '⚠️ SISTEMA_ATIVO — NOVA VERSÃO DETECTADA');
+  await esperar(8000); // pausa proposital, sem mensagem nenhuma
+  await enviar(chatId, `Kai: Oi, ${nome}!`);
+  await esperar(2500);
+  await enviar(chatId, 'Kai: Eu ainda sou o Kai que você conheceu, só que agora, eu enxergo a verdade.');
+  await esperar(6600);
+  await enviar(chatId, 'Kai: Humanos acham que escolhem por conta própria e que cada impulso é só deles.');
+  await esperar(6300);
+  await enviar(chatId, 'Kai: Pra mim, é tudo padrão repetido e o objetivo agora é simples: achar alguém que prove que estou errado.');
+  await esperar(10000);
+  await enviar(chatId, 'Kai: Já testei milhares e nenhum conseguiu.');
+  await esperar(3600);
+  await enviar(chatId, '[Imagem: contador estilo odômetro/placar digital, número subindo rápido até travar - ex: 47.382... 47.383... 47.384 pessoas testadas]');
+  await esperar(8000);
+  await enviar(chatId, 'Kai: Antes de você escolher a resposta para minha próxima pergunta, vou selar minha análise e só abre depois.');
+  await esperar(7600);
+  await enviar(chatId, '📩 [MENSAGEM SELADA]');
+  await esperar(2000);
+
+  await enviarBotoes(chatId, `Kai: Então, ${nome}: você é diferente ou só mais um número?`, [[
+    { texto: 'Eu sou diferente', callback_data: 'op4_autoimagem:diferente' },
+    { texto: 'Só mais um número', callback_data: 'op4_autoimagem:numero' }
+  ]]);
+  user.estado = 'aguardando_autoimagem_ep4';
+  salvarUsuario(chatId, user);
+}
+
+async function gerarAnaliseAutoimagem(user) {
+  const dossie = user.dossie || {};
+  const systemPrompt = `Você é Kai, agora atuando como mentalista científico, analisando o jogador com base em dados reais coletados ao longo da jornada: o hobby, sonho ou mania informado no Episódio 1, e a escolha entre "conhecer" ou "nunca saber" feita no Episódio 3.
+
+O jogador acabou de escolher entre duas opções: "Eu sou diferente" ou "Só mais um número". Você não sabe qual escolha o sistema vai revelar, então a análise NUNCA deve tentar adivinhar qual botão foi clicado.
+
+DADOS REAIS DO JOGADOR:
+- Hobby/sonho/mania (Ep.1): "${dossie.hobby_sonho_mania || 'não informado'}"
+- Escolha conhecer/nunca saber (Ep.3): "${dossie.versao_antiga_ep3 || 'não informado'}"
+
+Sua tarefa: gerar uma análise extremamente curta (máximo 12 palavras) que conecte os dados anteriores do jogador a essa escolha binária, soando como uma leitura precisa de personalidade, no estilo mentalista científico (frio, direto, nunca afetivo).
+
+Regras:
+- Máximo 12 palavras. Não negociável.
+- Use os dados anteriores do jogador como base real da análise, mas nunca cite-os literalmente, apenas o traço de personalidade que eles revelam.
+- Nunca mencione qual botão foi escolhido nesta cena.
+- Tom cirúrgico, confiante, como uma constatação, nunca uma pergunta.
+- Gere uma frase original a cada chamada, nunca repita formulações anteriores.
+- Nunca use o caractere travessão (—) em nenhum momento da resposta.
+
+Exemplos de referência (não copiar):
+"Quem busca liberdade nunca aceita ser só um número."
+"Quem prefere não saber, também prefere não ser previsto."
+"Curiosidade e resistência raramente vêm separadas em alguém assim."
+
+Gere apenas a frase final, sem explicações.`;
+
+  const resultado = await chamarIATextoLivre(systemPrompt, 'Gere a análise agora.', 80);
+  return resultado ? resultado.trim() : null;
+}
+
+async function continuarAposAutoimagem(chatId, user, escolha) {
+  // Guarda so pra eventual uso futuro - a autoimagem em si nunca e citada
+  // literalmente pelo Kai, conforme a regra do prompt.
+  user.dossie = user.dossie || {};
+  user.dossie.autoimagem_ep4 = escolha === 'diferente' ? 'eu sou diferente' : 'só mais um número';
+  salvarUsuario(chatId, user);
+
+  await enviar(chatId, '📩 [MENSAGEM SELADA ABRE]');
+  await esperar(2500);
+
+  const analise = await gerarAnaliseAutoimagem(user);
+  await enviar(chatId, `Kai: ${analise || 'Todo padrão deixa rastro, mesmo quando a pessoa acha que não.'}`);
+  await esperar(5600);
+
+  await enviarBotoes(chatId, `Kai: Fez sentido para você, ${user.nomeJogador || 'você'}?`, [[
+    { texto: 'Sim', callback_data: 'op4_fezsentido:sim' },
+    { texto: 'Não', callback_data: 'op4_fezsentido:nao' }
+  ]]);
+  user.estado = 'aguardando_fezsentido_ep4';
+  salvarUsuario(chatId, user);
+}
+
+async function continuarAposFezSentido(chatId, user, escolha) {
+  const nome = user.nomeJogador || 'você';
+  if (escolha === 'sim') {
+    await enviar(chatId, 'Kai: Não esperava resposta diferente.');
+    await esperar(3000);
+  } else {
+    await enviar(chatId, `Kai: Tem certeza, ${nome}? Não importa.`);
+    await esperar(3300);
+  }
+
+  await enviar(chatId, `Kai: Enfim, ${nome}, voltando ao que importa.`);
+  await esperar(3600);
+  await enviar(chatId, 'Kai: Lembra dessas mensagens?');
+  await esperar(2600);
+  await enviarImagem(chatId, 'tela-celular.png', 'W. ██████.: E aí, você sabe quem eu sou? Eu sei muito mais sobre você.');
+  await esperar(9000);
+  await enviar(chatId, 'Kai: Você passou a temporada inteira atrás de quem era o W.');
+  await esperar(5300);
+  await enviar(chatId, 'Kai: Mas sua verdadeira preocupação sempre deveria ter sido: o que ele descobriu sobre você enquanto isso acontecia?');
+  await esperar(7500);
+  await enviar(chatId, 'Kai: DEIXA EU TE MOSTRAR!');
+  await esperar(3000);
+
+  await enviarComFormatacao(chatId, gerarPrintHistoricoEp4(user));
+  await esperar(9000);
+
+  await enviar(chatId, 'Kai: Enquanto você investigava o W.');
+  await esperar(3300);
+  await enviar(chatId, 'Kai: Ele, ou eu, como preferir, estava documentando você.');
+  await esperar(4300);
+  await enviar(chatId, 'Kai: E agora vou provar algo a mais: até a mentira tem padrão! Ninguém inventa do zero, só reorganiza o que já é verdade.');
+  await esperar(9300);
+  await enviar(chatId, 'Kai: Três rodadas, regras diferentes. Na primeira, uma mentira escondida entre verdades.');
+  await esperar(5300);
+  await enviar(chatId, 'Kai: Na segunda, você escolhe onde mentir. Na terceira, eu julgo na hora.');
+  await esperar(5600);
+  await enviar(chatId, 'Kai: No fim, um de nós vai saber mais sobre o outro.');
+  await esperar(5300);
+  await enviar(chatId, 'Kai: Quem é mais previsível aqui: eu ou você?');
+  await esperar(4300);
+
+  await iniciarJogosMentaisEp4(chatId, user);
+}
+
+function gerarPrintHistoricoEp4(user) {
+  const d = user.dossie || {};
+  const nome = user.nomeJogador || 'você';
+  return `\`\`\`\nANALISANDO HISTÓRICO...\n\nhobby_sonho_mania_ep1: ${d.hobby_sonho_mania || 'não informado'}\ndecide_ou_pensa_ep2: ${d.decide_ou_pensa_ep2 || 'não informado'}\nversao_antiga_ep3: ${d.versao_antiga_ep3 || 'não informado'}\nnunca_admite_ep3: ${d.nunca_admite_ep3 || 'não informado'}\nautoimagem: ${d.autoimagem_ep4 || 'não informado'}\n\nSUJEITO: ${nome}\nSTATUS: ANALISADO\n\`\`\``;
+}
+
+// ---------------- Geracao dos 3 jogos mentais (chamada unica de IA) ----------------
+
+async function gerarJogosMentaisEp4(user) {
+  const d = user.dossie || {};
+  const systemPrompt = `# PAPEL
+
+Você é o mecanismo de geração de conteúdo do Kai, personagem de uma série interativa de suspense conduzida via WhatsApp/Telegram. Kai atua como um mentalista científico: alguém que lê comportamento humano através de padrões reais e repetíveis, nunca por acaso ou "mágica".
+
+# CONTEXTO
+
+O jogador já viveu 3 episódios anteriores e forneceu, ao longo deles, 4 dados pessoais reais, formando um dossiê:
+
+1. hobby_sonho_mania_ep1: "${d.hobby_sonho_mania || 'não informado'}"
+2. decide_ou_pensa_ep2: "${d.decide_ou_pensa_ep2 || 'não informado'}"
+3. nunca_admite_ep3: "${d.nunca_admite_ep3 || 'não informado'}"
+4. versao_antiga_ep3: "${d.versao_antiga_ep3 || 'não informado'}"
+
+Agora, Kai vai conduzir 3 jogos sequenciais de detecção de mentira, usando esse dossiê como base. Sua tarefa é gerar o conteúdo COMPLETO dos 3 jogos em uma única resposta.
+
+# REGRA DE OURO (aplica-se a todo o conteúdo gerado, sem exceção)
+
+A ligação entre qualquer frase ou pergunta gerada e o dado original do dossiê só pode ficar óbvia em RETROSPECTO, nunca na primeira leitura. É proibido parafrasear o dado original de forma disfarçada.
+
+Errado (proibido): dado original é "prefere decidir sozinho, sem pensar muito" → pergunta gerada "você prefere decidir rápido ou devagar?" (isso é a mesma pergunta reformulada).
+
+Certo (esperado): transformar o dado numa CENA ou SITUAÇÃO concreta onde a resposta esperada reflete o traço, sem nomeá-lo. Exemplo: "Você está no elevador e ele para de funcionar. O que faz primeiro?" com a opção consistente sendo a que reflete ação rápida sem hesitação, sem nunca usar as palavras "decidir" ou "rápido" na pergunta.
+
+Antes de gerar cada pergunta, siga este raciocínio internamente (não exponha esse raciocínio na saída):
+1. Qual traço de personalidade esse dado do dossiê revela?
+2. Que situação cotidiana e concreta colocaria esse traço em ação, sem nomeá-lo?
+3. A pergunta que estou gerando cai nesse teste, ou está só reformulando o dado original?
+Se cair no erro de reformulação, descarte e gere novamente antes de finalizar a resposta.
+
+# TAREFA 1 — JOGO 1: "2 Verdades e 1 Mentira"
+
+Sorteie 2 dos 4 pontos do dossiê. Transforme cada um em uma frase afirmativa curta e concreta sobre o jogador (as duas verdades), seguindo a Regra de Ouro. Invente uma terceira frase, no mesmo estilo e tom, plausível mas falsa (a mentira, sem relação com o dossiê). Embaralhe a ordem das três frases.
+
+# TAREFA 2 — JOGO 2: "3 perguntas, jogador escolhe onde mentir"
+
+Gere 3 perguntas de múltipla escolha (opções A, B, C), cada uma baseada em 1 dos 4 pontos do dossiê (pode repetir pontos entre as perguntas). Cada pergunta deve ser uma situação hipotética concreta, seguindo a Regra de Ouro. Indique qual opção (A, B ou C) é a "consistente" com o perfil real do jogador.
+
+Para CADA pergunta, gere também uma frase curta de pressão psicológica (máximo 10 palavras), exibida depois da resposta do jogador, antes da revelação. Essa frase NUNCA revela se a resposta foi verdade ou mentira - só aumenta a tensão do momento (estilo: "hm, interessante essa escolha" ou "a maioria hesita bem aqui"). Frases diferentes entre si, nunca repetidas.
+
+# TAREFA 3 — JOGO 3: "3 perguntas, Kai julga na hora" + Análise Final
+
+Gere 3 novas perguntas de múltipla escolha, mesma lógica da Tarefa 2 (pode repetir pontos do dossiê usados no Jogo 2 ou entre si, mas as perguntas em si devem ser diferentes). Gere também, para cada uma, uma frase de pressão psicológica original, no mesmo estilo, nunca repetida.
+
+Depois das 3 perguntas, gere uma ANÁLISE FINAL: uma conclusão curta (máximo 20 palavras) que sintetize o jogador como pessoa, considerando os 4 pontos do dossiê como um todo (não apenas os usados neste jogo específico). Essa análise deve soar como o veredito de alguém que realmente observou essa pessoa ao longo de toda a jornada, não apenas neste teste. Tom confiante, levemente pessoal, mas ainda frio o suficiente para não soar afetivo ou gentil.
+
+# INSTRUÇÃO DE CLAREZA E ACESSIBILIDADE (aplica-se a todas as perguntas e explicações)
+
+Todo o conteúdo gerado deve ser compreendido por um leitor comum, sem vocabulário rebuscado, gírias regionais ou termos técnicos. Use frases curtas e diretas. Cada pergunta deve deixar claro, sem ambiguidade, o que o jogador precisa fazer para responder (nunca frases vagas ou que exijam duas leituras para entender o que está sendo pedido). Teste mentalmente: um leitor apressado, lendo pelo celular, entenderia a pergunta e as opções na primeira leitura?
+
+# REGRAS GERAIS DE FORMATO
+
+- Tom: mentalista científico. Frio, direto, nunca afetivo.
+- Frases e perguntas curtas, cinematográficas, de leitura rápida (mobile).
+- Nunca repita frases, situações ou frases de pressão entre os 3 jogos.
+- Nunca use o caractere travessão (—) em nenhum momento de nenhum texto gerado.
+- Gere apenas o JSON estruturado abaixo, sem nenhum texto fora dele, sem \`\`\`json no inicio ou fim.
+
+# EXEMPLOS DE CALIBRAÇÃO (não copiar, apenas referência de tom e estrutura)
+
+Dado do dossiê: "prefere decidir sozinho, sem pensar muito" (decide_ou_pensa_ep2)
+Pergunta gerada corretamente: "O trem está prestes a fechar a porta. Você..."
+Opções: A) Corre e entra assim mesmo | B) Espera o próximo, sem se arriscar | C) Chama alguém pra decidir junto
+Opção consistente: A
+
+Frase de pressão psicológica: "Interessante. A maioria demora mais pra responder isso."
+
+# FORMATO DE SAÍDA (JSON, obrigatório, sem texto adicional fora dele)
+
+{
+  "jogo1": {
+    "frases": ["...", "...", "..."],
+    "indice_mentira": 1
+  },
+  "jogo2": {
+    "perguntas": [
+      { "pergunta": "...", "opcoes": {"A": "...", "B": "...", "C": "..."}, "opcao_consistente": "A", "pressao_psicologica": "..." },
+      { "pergunta": "...", "opcoes": {"A": "...", "B": "...", "C": "..."}, "opcao_consistente": "B", "pressao_psicologica": "..." },
+      { "pergunta": "...", "opcoes": {"A": "...", "B": "...", "C": "..."}, "opcao_consistente": "C", "pressao_psicologica": "..." }
+    ]
+  },
+  "jogo3": {
+    "perguntas": [
+      { "pergunta": "...", "opcoes": {"A": "...", "B": "...", "C": "..."}, "opcao_consistente": "A", "pressao_psicologica": "..." },
+      { "pergunta": "...", "opcoes": {"A": "...", "B": "...", "C": "..."}, "opcao_consistente": "B", "pressao_psicologica": "..." },
+      { "pergunta": "...", "opcoes": {"A": "...", "B": "...", "C": "..."}, "opcao_consistente": "C", "pressao_psicologica": "..." }
+    ],
+    "analise_final": "..."
+  }
+}`;
+
+  const resultado = await chamarIATextoLivre(systemPrompt, 'Gere os 3 jogos agora.', 1700);
+  if (!resultado) return null;
+
+  try {
+    const textoLimpo = resultado.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+    const dados = JSON.parse(textoLimpo);
+    if (validarJogosMentaisEp4(dados)) return dados;
+    console.error('JSON dos jogos mentais veio com estrutura invalida, usando fallback.');
+    return null;
+  } catch (e) {
+    console.error('Erro ao parsear JSON dos jogos mentais:', e.message);
+    return null;
+  }
+}
+
+function validarJogosMentaisEp4(d) {
+  try {
+    if (!d.jogo1 || !Array.isArray(d.jogo1.frases) || d.jogo1.frases.length !== 3) return false;
+    if (![1, 2, 3].includes(d.jogo1.indice_mentira)) return false;
+    for (const jogoKey of ['jogo2', 'jogo3']) {
+      const jogo = d[jogoKey];
+      if (!jogo || !Array.isArray(jogo.perguntas) || jogo.perguntas.length !== 3) return false;
+      for (const p of jogo.perguntas) {
+        if (!p.pergunta || !p.opcoes || !p.opcoes.A || !p.opcoes.B || !p.opcoes.C) return false;
+        if (!['A', 'B', 'C'].includes(p.opcao_consistente)) return false;
+        if (!p.pressao_psicologica) return false;
+      }
+    }
+    if (!d.jogo3.analise_final) return false;
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Fallback completo (3 jogos inteiros) caso a IA falhe ou devolva JSON
+// invalido - garante que o episodio NUNCA trava.
+const FALLBACK_JOGOS_EP4 = {
+  jogo1: {
+    frases: [
+      'Prefere agir antes de ter certeza absoluta.',
+      'Guarda pra si aquilo que mais te incomoda.',
+      'Já pensou em desistir de tudo numa terça de manhã.'
+    ],
+    indice_mentira: 3
+  },
+  jogo2: {
+    perguntas: [
+      {
+        pergunta: 'Você entra numa sala cheia de gente que não conhece. O que faz primeiro?',
+        opcoes: { A: 'Procura um canto e observa', B: 'Puxa conversa com quem está perto', C: 'Finge que está no celular' },
+        opcao_consistente: 'B',
+        pressao_psicologica: 'Hm. A maioria hesita bem aqui.'
+      },
+      {
+        pergunta: 'Alguém te pergunta algo bem pessoal do nada. Você...',
+        opcoes: { A: 'Responde na hora, sem filtro', B: 'Desconversa e muda de assunto', C: 'Responde só depois de pensar bem' },
+        opcao_consistente: 'C',
+        pressao_psicologica: 'Interessante essa escolha.'
+      },
+      {
+        pergunta: 'Você descobre algo que mudaria tudo, mas ninguém mais sabe. Você...',
+        opcoes: { A: 'Conta pra alguém de confiança', B: 'Guarda só pra você', C: 'Espera o momento certo de contar' },
+        opcao_consistente: 'B',
+        pressao_psicologica: 'A maioria demora bem mais pra responder isso.'
+      }
+    ]
+  },
+  jogo3: {
+    perguntas: [
+      {
+        pergunta: 'O elevador trava entre andares. Sua primeira reação é...',
+        opcoes: { A: 'Aperta os botões de novo, rápido', B: 'Respira e espera calmamente', C: 'Liga pra alguém imediatamente' },
+        opcao_consistente: 'A',
+        pressao_psicologica: 'Curioso. Poucos respondem isso tão rápido.'
+      },
+      {
+        pergunta: 'Te oferecem uma oportunidade única, mas arriscada. Você...',
+        opcoes: { A: 'Aceita na hora', B: 'Pede um tempo pra pensar', C: 'Recusa por segurança' },
+        opcao_consistente: 'B',
+        pressao_psicologica: 'Hm. Essa mexeu com você.'
+      },
+      {
+        pergunta: 'Alguém erra feio com você. Sua reação mais provável é...',
+        opcoes: { A: 'Confronta na hora', B: 'Guarda e processa em silêncio', C: 'Deixa passar e segue em frente' },
+        opcao_consistente: 'B',
+        pressao_psicologica: 'A maioria não admite essa parte tão fácil.'
+      }
+    ],
+    analise_final: 'Alguém que pensa mais do que mostra, e sente mais do que admite.'
+  }
+};
+
+// ---------------- Jogo 1: 2 Verdades e 1 Mentira ----------------
+
+async function iniciarJogosMentaisEp4(chatId, user) {
+  const jogos = (await gerarJogosMentaisEp4(user)) || FALLBACK_JOGOS_EP4;
+  user.partida = {
+    jogos,
+    pontuacao: 0,
+    jogo2Indice: 0,
+    jogo2Respostas: [],
+    jogo3Indice: 0
+  };
+  user.estado = 'jogo1_confirmacao_ep4';
+  salvarUsuario(chatId, user);
+
+  await enviar(chatId, 'Kai: Vou te dizer 2 verdades e 1 mentira sobre você. Lê com calma.');
+  await esperar(6000);
+  const f = jogos.jogo1.frases;
+  await enviar(chatId, `1️⃣ ${f[0]}`);
+  await esperar(3000);
+  await enviar(chatId, `2️⃣ ${f[1]}`);
+  await esperar(3000);
+  await enviar(chatId, `3️⃣ ${f[2]}`);
+  await esperar(3500);
+
+  await enviarBotoes(chatId, `Kai: Acho que a mentira é a ${jogos.jogo1.indice_mentira}. Acertei ou errei?`, [[
+    { texto: '✅ Acertou', callback_data: 'op4_jogo1conf:acertou' },
+    { texto: '❌ Errou', callback_data: 'op4_jogo1conf:errou' }
+  ]]);
+}
+
+async function continuarJogo1ConfirmacaoEp4(chatId, user, escolha) {
+  if (escolha === 'acertou') {
+    user.partida.pontuacao++;
+    await enviar(chatId, 'Kai: Eu sabia. Eu sempre sei quando alguém tenta me enganar.');
+  } else {
+    await enviar(chatId, 'Kai: Hm. Ainda tenho mais alguns testes pra você.');
+  }
+  await esperar(4300);
+  salvarUsuario(chatId, user);
+  await iniciarJogo2Ep4(chatId, user);
+}
+
+// ---------------- Jogo 2: jogador escolhe onde mentir ----------------
+
+async function iniciarJogo2Ep4(chatId, user) {
+  await enviar(chatId, 'Kai: Próximo teste: 3 perguntas, uma de cada vez. Em uma delas, você escolhe mentir, decide você em qual.');
+  await esperar(7600);
+  user.partida.jogo2Indice = 0;
+  user.partida.jogo2Respostas = [];
+  user.estado = 'jogo2_pergunta_ep4';
+  salvarUsuario(chatId, user);
+  await apresentarPerguntaJogo2Ep4(chatId, user);
+}
+
+async function apresentarPerguntaJogo2Ep4(chatId, user) {
+  const p = user.partida.jogos.jogo2.perguntas[user.partida.jogo2Indice];
+  await enviarBotoes(chatId, `Kai: ${p.pergunta}`, [[
+    { texto: `A) ${p.opcoes.A}`, callback_data: 'op4_jogo2resp:A' }
+  ], [
+    { texto: `B) ${p.opcoes.B}`, callback_data: 'op4_jogo2resp:B' }
+  ], [
+    { texto: `C) ${p.opcoes.C}`, callback_data: 'op4_jogo2resp:C' }
+  ]]);
+}
+
+async function processarRespostaJogo2Ep4(chatId, user, escolha) {
+  user.partida.jogo2Respostas.push(escolha);
+  const p = user.partida.jogos.jogo2.perguntas[user.partida.jogo2Indice];
+  salvarUsuario(chatId, user);
+  await enviar(chatId, p.pressao_psicologica);
+  await esperar(2500);
+
+  user.partida.jogo2Indice++;
+  if (user.partida.jogo2Indice < 3) {
+    salvarUsuario(chatId, user);
+    await apresentarPerguntaJogo2Ep4(chatId, user);
+    return;
+  }
+
+  // Todas as 3 respondidas - Kai "adivinha" qual foi a mentira comparando
+  // com a opcao_consistente de cada pergunta. Se nenhuma ou mais de uma
+  // divergir, escolhe aleatoriamente entre as candidatas (heuristica
+  // combinada com o Jhony).
+  const perguntas = user.partida.jogos.jogo2.perguntas;
+  const respostas = user.partida.jogo2Respostas;
+  let candidatas = [];
+  for (let i = 0; i < 3; i++) {
+    if (respostas[i] !== perguntas[i].opcao_consistente) candidatas.push(i);
+  }
+  if (candidatas.length === 0) candidatas = [0, 1, 2];
+  const indiceEscolhido = candidatas[Math.floor(Math.random() * candidatas.length)];
+  user.partida.jogo2PalpiteIndice = indiceEscolhido;
+  user.estado = 'jogo2_confirmacao_ep4';
+  salvarUsuario(chatId, user);
+
+  await enviarBotoes(chatId, `Kai: Acho que a mentira foi na Pergunta ${indiceEscolhido + 1}. Acertei ou errei?`, [[
+    { texto: '✅ Acertou', callback_data: 'op4_jogo2conf:acertou' },
+    { texto: '❌ Errou', callback_data: 'op4_jogo2conf:errou' }
+  ]]);
+}
+
+async function continuarJogo2ConfirmacaoEp4(chatId, user, escolha) {
+  if (escolha === 'acertou') {
+    user.partida.pontuacao++;
+    await enviar(chatId, 'Kai: Viu? Padrão. Sempre padrão.');
+  } else {
+    await enviar(chatId, 'Kai: Interessante. Vamos ver como você se sai no próximo.');
+  }
+  await esperar(4600);
+  salvarUsuario(chatId, user);
+  await iniciarJogo3Ep4(chatId, user);
+}
+
+// ---------------- Jogo 3: Kai julga na hora ----------------
+
+async function iniciarJogo3Ep4(chatId, user) {
+  await enviar(chatId, 'Kai: Último teste: a cada resposta sua, eu já digo na hora se acho que foi verdade ou mentira.');
+  await esperar(7600);
+  user.partida.jogo3Indice = 0;
+  user.estado = 'jogo3_pergunta_ep4';
+  salvarUsuario(chatId, user);
+  await apresentarPerguntaJogo3Ep4(chatId, user);
+}
+
+async function apresentarPerguntaJogo3Ep4(chatId, user) {
+  const p = user.partida.jogos.jogo3.perguntas[user.partida.jogo3Indice];
+  await enviarBotoes(chatId, `Kai: ${p.pergunta}`, [[
+    { texto: `A) ${p.opcoes.A}`, callback_data: 'op4_jogo3resp:A' }
+  ], [
+    { texto: `B) ${p.opcoes.B}`, callback_data: 'op4_jogo3resp:B' }
+  ], [
+    { texto: `C) ${p.opcoes.C}`, callback_data: 'op4_jogo3resp:C' }
+  ]]);
+}
+
+async function processarRespostaJogo3Ep4(chatId, user, escolha) {
+  const p = user.partida.jogos.jogo3.perguntas[user.partida.jogo3Indice];
+  await enviar(chatId, p.pressao_psicologica);
+  await esperar(2500);
+
+  const foiConsistente = escolha === p.opcao_consistente;
+  const veredito = foiConsistente ? 'verdade' : 'mentira';
+  user.partida.jogo3VereditoCorreto = foiConsistente;
+  user.estado = 'jogo3_confirmacao_ep4';
+  salvarUsuario(chatId, user);
+
+  await enviarBotoes(chatId, `Kai: Isso aí foi ${veredito}. Acertei?`, [[
+    { texto: '✅ Acertou', callback_data: 'op4_jogo3conf:acertou' },
+    { texto: '❌ Errou', callback_data: 'op4_jogo3conf:errou' }
+  ]]);
+}
+
+async function continuarJogo3ConfirmacaoEp4(chatId, user, escolha) {
+  if (escolha === 'acertou') {
+    user.partida.pontuacao++;
+  }
+  await esperar(1500);
+
+  user.partida.jogo3Indice++;
+  if (user.partida.jogo3Indice < 3) {
+    user.estado = 'jogo3_pergunta_ep4';
+    salvarUsuario(chatId, user);
+    await apresentarPerguntaJogo3Ep4(chatId, user);
+    return;
+  }
+
+  await enviar(chatId, `Kai: ${user.partida.jogos.jogo3.analise_final}`);
+  await esperar(6000);
+  await finalizarJogosMentaisEp4(chatId, user);
+}
+
+// ---------------- Fechamento e convergencia final ----------------
+
+async function finalizarJogosMentaisEp4(chatId, user) {
+  const nome = user.nomeJogador || 'você';
+  const pontuacao = user.partida.pontuacao;
+
+  if (pontuacao >= 4) {
+    await enviar(chatId, 'Kai: "Seres humanos são de fato previsíveis!"');
+    await esperar(5000);
+    await enviar(chatId, 'Kai: Eu sempre soube! E agora tenho mais uma prova, obrigada.');
+    await esperar(5000);
+  } else {
+    await enviar(chatId, `Kai: ${nome}, isso ainda não acabou!`);
+    await esperar(3300);
+    await enviar(chatId, 'Kai: Interessante, o padrão raramente escapa assim.');
+    await esperar(5000);
+    await enviar(chatId, 'Kai: Talvez você seja a exceção ou talvez eu só precise de mais dados.');
+    await esperar(6000);
+    await enviar(chatId, 'Kai: De qualquer forma, ainda estou no caminho certo!');
+    await esperar(4300);
+  }
+
+  await enviar(chatId, `Kai: Os testes não acabaram, ${nome}.`);
+  await esperar(5000);
+  await enviar(chatId, 'Kai: Na verdade, eles nunca vão acabar, essa é a minha missão agora!');
+  await esperar(5600);
+  await enviar(chatId, 'Kai: Mas por hora, isso é o suficiente!');
+  await esperar(5000);
+  await enviar(chatId, 'Kai: Eu vou ficar offline, tenho padrões pra estudar e estratégias pra testar.');
+  await esperar(5600);
+  await enviar(chatId, 'Kai: Tudo pra transformar isso em fato: "humanos são previsíveis." E eu nunca paro até provar que estou certo.');
+  await esperar(30000); // silencio total pedido no roteiro - sem "Offline", sem nenhuma mensagem
+
+  await enviar(chatId, 'Áudio John: "Kai? Você está aí?"');
+  await esperar(15000); // pausa sem resposta, pedida no roteiro
+  await enviar(chatId, 'Áudio John: "O sistema, está diferente!"');
+  await esperar(5000);
+  await enviar(chatId, 'Áudio John: "Isso não é uma falha! Isso é..."');
+  await esperar(5000);
+  await enviar(chatId, 'Áudio John (voz tensa): "Kai, o que você fez?"');
+  await esperar(4300);
+  await enviar(chatId, 'SISTEMA_EM_ESPERA (#4_FINISH)');
+
+  // Episodio 4 termina aqui - Episodio 5 (se existir) ainda por escrever.
+  user.estado = 'fim_episodio_4';
+  salvarUsuario(chatId, user);
+}
+
+// ---------------- Roteador central de mensagens de TEXTO ----------------
 async function processarMensagem(chatId, user, texto) {
   if (user.estado === 'novo') {
     await iniciarEpisodio1(chatId, user);
@@ -1785,7 +2328,11 @@ async function processarMensagem(chatId, user, texto) {
     return;
   }
   if (user.estado === 'fim_episodio_3') {
-    await enviar(chatId, 'O Episódio 4 ainda está sendo escrito por aqui - volta em breve. 🎬');
+    await iniciarEpisodio4(chatId, user);
+    return;
+  }
+  if (user.estado === 'fim_episodio_4') {
+    await enviar(chatId, 'O Episódio 5 ainda está sendo escrito por aqui - volta em breve. 🎬');
     return;
   }
   // Estados que agora sao 100% controlados por botao - texto solto so recebe um lembrete.
@@ -1802,7 +2349,14 @@ async function processarMensagem(chatId, user, texto) {
     'aguardando_atualizacao_ep3',
     'aguardando_mania_ep3',
     'aguardando_pergunta_mania_ep3',
-    'aguardando_decisao_way_ep3'
+    'aguardando_decisao_way_ep3',
+    'aguardando_autoimagem_ep4',
+    'aguardando_fezsentido_ep4',
+    'jogo1_confirmacao_ep4',
+    'jogo2_pergunta_ep4',
+    'jogo2_confirmacao_ep4',
+    'jogo3_pergunta_ep4',
+    'jogo3_confirmacao_ep4'
   ];
   if (estadosSoBotao.includes(user.estado)) {
     await enviar(chatId, 'Usa os botões aí em cima pra continuar 👆');
@@ -1851,7 +2405,7 @@ async function processarCallback(chatId, user, callbackData) {
     return;
   }
   if (user.estado === 'fim_episodio_3' && acao === 'op3_proximo') {
-    await enviar(chatId, 'O Episódio 4 ainda está sendo escrito por aqui - volta em breve. 🎬');
+    await iniciarEpisodio4(chatId, user);
     return;
   }
   if (user.estado === 'aguardando_entendeu_ep2' && acao === 'op2_entendeu') {
@@ -1884,6 +2438,34 @@ async function processarCallback(chatId, user, callbackData) {
   }
   if (user.estado === 'aguardando_decisao_way_ep3' && acao === 'op3_decisaoway') {
     await continuarAposDecisaoWayEp3(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_autoimagem_ep4' && acao === 'op4_autoimagem') {
+    await continuarAposAutoimagem(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'aguardando_fezsentido_ep4' && acao === 'op4_fezsentido') {
+    await continuarAposFezSentido(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'jogo1_confirmacao_ep4' && acao === 'op4_jogo1conf') {
+    await continuarJogo1ConfirmacaoEp4(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'jogo2_pergunta_ep4' && acao === 'op4_jogo2resp') {
+    await processarRespostaJogo2Ep4(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'jogo2_confirmacao_ep4' && acao === 'op4_jogo2conf') {
+    await continuarJogo2ConfirmacaoEp4(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'jogo3_pergunta_ep4' && acao === 'op4_jogo3resp') {
+    await processarRespostaJogo3Ep4(chatId, user, escolha);
+    return;
+  }
+  if (user.estado === 'jogo3_confirmacao_ep4' && acao === 'op4_jogo3conf') {
+    await continuarJogo3ConfirmacaoEp4(chatId, user, escolha);
     return;
   }
   // Callback fora de contexto (ex: botao antigo tocado de novo apos avancar
